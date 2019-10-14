@@ -12,6 +12,8 @@ module.exports = {
     new CleanWebpackPlugin(),
     new HtmlWebpackPlugin({
       title: 'Objective Bank',
+      template: 'src/index.html',
+      inject: false,
     }),
   ],
   module: {
