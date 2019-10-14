@@ -2,4 +2,7 @@ elm-stuff/*
 elm.js
 *.iml
 .idea/*
+**/node_modules/*
+dist/*
+
 

@@ -1,0 +1,11 @@
+{
+  "name": "deploy",
+  "version": "1.0.0",
+  "description": "Deploy this application",
+  "main": "index.js",
+  "license": "MIT",
+  "dependencies": {
+    "aws-sdk": "^2.474.0",
+    "chalk": "^2.4.2"
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "name": "mystic-client",
+  "version": "1.0.0",
+  "description": "Mystic Client",
+  "author": "Stephen Karger",
+  "private": true,
+  "scripts": {
+    "dev": "webpack --mode development",
+    "build": "webpack --mode production"
+  },
+  "devDependencies": {
+    "clean-webpack-plugin": "^3.0.0",
+    "elm-webpack-loader": "^6.0.0",
+    "html-webpack-plugin": "^3.2.0",
+    "webpack": "^4.41.0",
+    "webpack-cli": "^3.3.9"
+  }
+}
