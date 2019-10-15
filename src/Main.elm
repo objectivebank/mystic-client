@@ -317,11 +317,20 @@ goalAreasView : Model -> Element Msg
 goalAreasView model =
     El.row
         []
-        [ El.column []
+        [ El.column [El.width (El.fillPortion 7)]
             (El.text "Goal Areas"
                 :: goalAreaCheckboxes model.goalAreas model.selectedGoalAreas
             )
-        ]
+         , centerGap
+         ,El.column
+                  [ El.spaceEvenly
+                  , El.width (El.fillPortion 7)
+                  , El.height El.fill
+                  ]
+                  [selectedView model.clientName (model.selectedObjectives
+                                     |> List.map (\id -> ( id, Dict.get id model.objectives ))
+                                     |> List.filterMap filterSecond)
+        ]]
 
 
 goalAreaCheckboxes : Dict UniqueID GoalArea -> List UniqueID -> List (Element Msg)
@@ -369,10 +378,6 @@ searchResultsView model =
                 |> List.map (\id -> ( id, Dict.get id model.objectives ))
                 |> List.filterMap filterSecond
             )
-            (model.selectedObjectives
-                |> List.map (\id -> ( id, Dict.get id model.objectives ))
-                |> List.filterMap filterSecond
-            )
         ]
 
 
@@ -385,23 +390,23 @@ filterSecond ( a, maybeB ) =
             Nothing
 
 
-searchResults : String -> List ( UniqueID, Objective ) -> List ( UniqueID, Objective ) -> Element Msg
-searchResults clientName foundObjectives selectedObjectives =
+searchResults : String -> List ( UniqueID, Objective ) -> Element Msg
+searchResults clientName foundObjectives =
     El.row
         [ El.width El.fill
         , El.height El.fill
         ]
-        [ objectivesRow clientName foundObjectives selectedObjectives ]
+        [ objectivesRow clientName foundObjectives ]
 
 
-objectivesRow : String -> List ( UniqueID, Objective ) -> List ( UniqueID, Objective ) -> Element Msg
-objectivesRow clientName foundObjectives selectedObjectives =
+objectivesRow : String -> List ( UniqueID, Objective ) -> Element Msg
+objectivesRow clientName foundObjectives =
     El.row
         [ El.spaceEvenly
         , El.width El.fill
         , El.height El.fill
         ]
-        [ objectivesView clientName foundObjectives, centerGap, selectedView clientName selectedObjectives ]
+        [ objectivesView clientName foundObjectives ]
 
 
 objectivesColumn : El.Color -> List (Element msg) -> Element msg
