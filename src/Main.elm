@@ -27,6 +27,7 @@ type alias Model =
     , selectedGoalAreas : List UniqueID
     , clientName : String
     , graphqlURL : String
+    , searchQueryEntered : Bool
     }
 
 
@@ -79,6 +80,7 @@ init flags _ _ =
       , selectedGoalAreas = []
       , clientName = "Client"
       , graphqlURL = flags.graphqlURL
+      , searchQueryEntered = True
       }
     , makeRequest flags.graphqlURL GoalAreasResponse goalAreasQuery
     )
@@ -289,10 +291,9 @@ applicationView model =
         [ El.width El.fill
         , El.height El.fill
         , El.padding 10
-        , El.spacing 10
         ]
         [ searchBarView model.objectiveSearchText
-        , goalAreasView model
+        , middleView model
         , searchResultsView model
         ]
 
@@ -300,7 +301,8 @@ applicationView model =
 searchBarView : String -> Element Msg
 searchBarView currentSearchText =
     El.row
-        [ El.width El.fill ]
+        [ El.width El.fill
+         , El.paddingEach { top = 10, right = 10, bottom = 10, left = 10}]
         [ El.column [ El.width El.fill, El.spacing 8 ]
             [ El.text "Objective Search"
             , Input.text []
@@ -313,21 +315,77 @@ searchBarView currentSearchText =
         ]
 
 
-goalAreasView : Model -> Element Msg
-goalAreasView model =
+middleView : Model -> Element Msg
+middleView model =
     El.row
-        []
-        [ El.column []
-            (El.text "Goal Areas"
-                :: goalAreaCheckboxes model.goalAreas model.selectedGoalAreas
-            )
+        [ El.width El.fill
+        , El.height <| El.px 500
+        , El.paddingEach { top = 0, right = 10, bottom = 0, left = 10}
+        ]
+        [ goalAreasView model
+        , centerGap
+        , selectedWrapper model
         ]
 
 
-goalAreaCheckboxes : Dict UniqueID GoalArea -> List UniqueID -> List (Element Msg)
+goalAreasView : Model -> Element Msg
+goalAreasView model =
+    El.column
+        [ El.alignTop
+        , El.width (El.fillPortion 7)
+        , El.spaceEvenly
+        , El.paddingEach { top = 10, right = 0, bottom = 10, left = 0}
+        ]
+            [  El.text "Goal Areas"
+            , goalAreaCheckboxes model.goalAreas model.selectedGoalAreas
+            , clientVariablesView model
+            ]
+
+
+
+selectedWrapper : Model -> Element Msg
+selectedWrapper model =
+    El.column
+        [ El.alignRight
+        , El.width (El.fillPortion 10)
+        , El.height El.fill
+        , El.scrollbarY
+        , El.paddingEach { top = 10, right = 0, bottom = 0, left = 10}
+        ]
+        [ El.text <| selectedObjectivesHeading model.selectedObjectives
+        , selectedView model.clientName
+            (model.selectedObjectives
+                |> List.map (\id -> ( id, Dict.get id model.objectives ))
+                |> List.filterMap filterSecond
+            )
+        ]
+
+selectedObjectivesHeading : List (UniqueID) -> String
+selectedObjectivesHeading selectedObjectives =
+    if List.length selectedObjectives == 0 then
+      "Selected objectives"
+    else
+      "Selected objectives (" ++ String.fromInt (List.length selectedObjectives) ++ ")"
+
+selectedView : String -> List ( UniqueID, Objective ) -> Element Msg
+selectedView clientName objs =
+    objectivesColumn selectedBackground white
+        (List.map
+            (\( id, obj ) -> selectedObjective id <| String.replace "%1$s" clientName <| objectiveText obj)
+            objs
+        )
+
+
+centerGap : Element msg
+centerGap =
+    El.column [ El.width (El.fillPortion 1) ] []
+
+
+goalAreaCheckboxes : Dict UniqueID GoalArea -> List UniqueID -> Element Msg
 goalAreaCheckboxes goalAreas selectedGoalAreas =
-    Dict.toList goalAreas
-        |> List.map (\( id, ga ) -> goalAreaCheckbox id (List.member id selectedGoalAreas) (goalAreaText ga))
+    El.column [El.paddingXY 0 10]
+    <| (Dict.toList goalAreas
+        |> List.map (\( id, ga ) -> goalAreaCheckbox id (List.member id selectedGoalAreas) (goalAreaText ga)))
 
 
 goalAreaCheckbox : UniqueID -> Bool -> String -> Element Msg
@@ -345,6 +403,7 @@ clientVariablesView model =
     El.row
         [ El.width El.fill
         , El.height El.fill
+        , El.paddingXY 0 30
         ]
         [ clientNameInput model.clientName ]
 
@@ -361,17 +420,16 @@ clientNameInput currentName =
 
 searchResultsView : Model -> Element Msg
 searchResultsView model =
-    El.column [ El.width El.fill, El.spacing 24 ]
-        [ clientVariablesView model
-        , searchResults
+    El.column [ El.width El.fill
+    , El.paddingEach { top = 0, right = 10, bottom = 10, left = 10}
+    , El.spacing 24 ]
+        [ searchResults
             model.clientName
+            model.searchQueryEntered
             (model.matchingObjectives
                 |> List.map (\id -> ( id, Dict.get id model.objectives ))
                 |> List.filterMap filterSecond
-            )
-            (model.selectedObjectives
-                |> List.map (\id -> ( id, Dict.get id model.objectives ))
-                |> List.filterMap filterSecond
+                |> List.map (\(id, obj) -> (id, obj, List.member id model.selectedObjectives))
             )
         ]
 
@@ -385,29 +443,39 @@ filterSecond ( a, maybeB ) =
             Nothing
 
 
-searchResults : String -> List ( UniqueID, Objective ) -> List ( UniqueID, Objective ) -> Element Msg
-searchResults clientName foundObjectives selectedObjectives =
+searchResults : String -> Bool -> List ( UniqueID, Objective, Bool ) -> Element Msg
+searchResults clientName searchQueryEntered foundObjectives =
     El.row
         [ El.width El.fill
         , El.height El.fill
         ]
-        [ objectivesRow clientName foundObjectives selectedObjectives ]
+        [ objectivesRow clientName searchQueryEntered foundObjectives ]
 
 
-objectivesRow : String -> List ( UniqueID, Objective ) -> List ( UniqueID, Objective ) -> Element Msg
-objectivesRow clientName foundObjectives selectedObjectives =
+objectivesRow : String -> Bool -> List ( UniqueID, Objective, Bool ) -> Element Msg
+objectivesRow clientName searchQueryEntered foundObjectives =
+    let
+        heading = if searchQueryEntered then
+                    El.text "Results"
+                  else
+                    El.none
+    in
     El.row
         [ El.spaceEvenly
         , El.width El.fill
         , El.height El.fill
+        ] [
+          El.column [El.width El.fill, El.spacing 10]
+          [ heading, objectivesView clientName foundObjectives ]
         ]
-        [ objectivesView clientName foundObjectives, centerGap, selectedView clientName selectedObjectives ]
 
 
-objectivesColumn : El.Color -> List (Element msg) -> Element msg
-objectivesColumn borderColor elements =
+
+objectivesColumn : El.Color -> El.Color -> List (Element msg) -> Element msg
+objectivesColumn borderColor backgroundColor elements =
     El.column
         [ Border.color borderColor
+        , Background.color backgroundColor
         , Border.width 1
         , El.alignTop
         , El.width (El.fillPortion 8)
@@ -418,11 +486,23 @@ objectivesColumn borderColor elements =
         elements
 
 
-objectivesView : String -> List ( UniqueID, Objective ) -> Element Msg
+objectivesView : String -> List ( UniqueID, Objective, Bool ) -> Element Msg
 objectivesView clientName objs =
-    objectivesColumn lightGray
+    let borderColor = if List.length objs > 0 then
+                        lightGray
+                      else
+                        white
+    in
+    objectivesColumn borderColor white
         (List.map
-            (\( id, obj ) -> foundObjective id <| String.replace "%1$s" clientName <| objectiveText obj)
+            (\( id, obj, selected ) ->
+              let
+                  objectiveBackgroundColor = if selected then
+                                              selectedBackground
+                                             else
+                                              lightGray
+              in
+              foundObjective id objectiveBackgroundColor <| String.replace "%1$s" clientName <| objectiveText obj)
             objs
         )
 
@@ -431,31 +511,28 @@ lightGray =
     El.rgb 0.9 0.9 0.9
 
 
-selectedView : String -> List ( UniqueID, Objective ) -> Element Msg
-selectedView clientName objs =
-    objectivesColumn lightGray
-        (List.map
-            (\( id, obj ) -> selectedObjective id <| String.replace "%1$s" clientName <| objectiveText obj)
-            objs
-        )
+white =
+    El.rgb 1 1 1
 
+selectedBackground =
+    El.rgb255 204 229 255
 
-foundObjective id text =
-    objectiveCard (AddObjective id) "Add" text
+foundObjective id backgroundColor text =
+    objectiveCard (AddObjective id) "Add" text backgroundColor
 
 
 selectedObjective id text =
-    objectiveCard (RemoveObjective id) "Remove" text
+    objectiveCard (RemoveObjective id) "Remove" text selectedBackground
 
 
-objectiveCard : Msg -> String -> String -> Element Msg
-objectiveCard buttonMsg buttonText objText =
+objectiveCard : Msg -> String -> String -> El.Color -> Element Msg
+objectiveCard buttonMsg buttonText objText backgroundColor =
     El.el
         [ El.padding 5
         , El.height <| El.px 90
         , El.width El.fill
         , Background.color
-            lightGray
+            backgroundColor
         ]
         (El.paragraph [] [ El.text objText, El.el [ El.alignRight ] (objectiveButton buttonMsg buttonText) ])
 
@@ -468,8 +545,3 @@ objectiveButton msg buttonText =
         { onPress = Just msg
         , label = El.text buttonText
         }
-
-
-centerGap : Element msg
-centerGap =
-    El.column [ El.width (El.fillPortion 1) ] []
