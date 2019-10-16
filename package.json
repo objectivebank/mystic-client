@@ -7,7 +7,8 @@
   "scripts": {
     "dev": "webpack --mode development",
     "build": "webpack --mode production",
-    "start": "webpack-dev-server --open"
+    "start": "webpack-dev-server --open",
+    "release": "yarn build && node lib/deploy/index.js"
   },
   "devDependencies": {
     "clean-webpack-plugin": "^3.0.0",

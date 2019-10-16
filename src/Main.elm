@@ -27,7 +27,7 @@ type alias Model =
     , selectedGoalAreas : List UniqueID
     , clientName : String
     , graphqlURL : String
-    , searchQueryEntered : Bool
+    , searchInputEntered : Bool
     }
 
 
@@ -80,7 +80,7 @@ init flags _ _ =
       , selectedGoalAreas = []
       , clientName = "Client"
       , graphqlURL = flags.graphqlURL
-      , searchQueryEntered = True
+      , searchInputEntered = False
       }
     , makeRequest flags.graphqlURL GoalAreasResponse goalAreasQuery
     )
@@ -130,7 +130,8 @@ update msg model =
                 interimMatching =
                     matchingForSearchInput model.matchingObjectives newText model.selectedGoalAreas
             in
-            ( { model | objectiveSearchText = newText, matchingObjectives = interimMatching }
+            ( { model | objectiveSearchText = newText, matchingObjectives = interimMatching
+                        , searchInputEntered = searchInputEntered newText model.selectedObjectives  }
             , objectivesSearch model.graphqlURL newText model.selectedGoalAreas
             )
 
@@ -150,7 +151,8 @@ update msg model =
                 interimMatching =
                     matchingForSearchInput model.matchingObjectives model.objectiveSearchText newSelection
             in
-            ( { model | selectedGoalAreas = newSelection, matchingObjectives = interimMatching }
+            ( { model | selectedGoalAreas = newSelection, matchingObjectives = interimMatching
+                        , searchInputEntered = searchInputEntered model.objectiveSearchText newSelection}
             , objectivesSearch model.graphqlURL model.objectiveSearchText newSelection
             )
 
@@ -169,6 +171,9 @@ update msg model =
             , Cmd.none
             )
 
+searchInputEntered : String -> List (UniqueID) -> Bool
+searchInputEntered searchText selectedGoalAreaIds =
+    String.length searchText > 0 || List.length selectedGoalAreaIds > 0
 
 goalAreasQuery : SelectionSet (List GoalArea) RootQuery
 goalAreasQuery =
@@ -184,20 +189,19 @@ goalAreaSelection =
 
 matchingForSearchInput : List UniqueID -> String -> List UniqueID -> List UniqueID
 matchingForSearchInput currentMatchingObjectives searchText selectedGoalAreaIds =
-    if String.length searchText == 0 && List.length selectedGoalAreaIds == 0 then
-        []
-
+    if searchInputEntered searchText selectedGoalAreaIds then
+      currentMatchingObjectives
     else
-        currentMatchingObjectives
+        []
 
 
 objectivesSearch : String -> String -> List UniqueID -> Cmd Msg
 objectivesSearch graphqlURL searchText selectedGoalAreaIds =
-    if String.length searchText == 0 && List.length selectedGoalAreaIds == 0 then
-        Cmd.none
+    if searchInputEntered searchText selectedGoalAreaIds then
+        makeRequest graphqlURL ObjectivesResponse <| objectivesQuery searchText selectedGoalAreaIds
 
     else
-        makeRequest graphqlURL ObjectivesResponse <| objectivesQuery searchText selectedGoalAreaIds
+        Cmd.none
 
 
 objectivesQuery : String -> List UniqueID -> SelectionSet (List Objective) RootQuery
@@ -369,7 +373,7 @@ selectedObjectivesHeading selectedObjectives =
 
 selectedView : String -> List ( UniqueID, Objective ) -> Element Msg
 selectedView clientName objs =
-    objectivesColumn selectedBackground white
+    objectivesColumn lightBlue white
         (List.map
             (\( id, obj ) -> selectedObjective id <| String.replace "%1$s" clientName <| objectiveText obj)
             objs
@@ -425,7 +429,7 @@ searchResultsView model =
     , El.spacing 24 ]
         [ searchResults
             model.clientName
-            model.searchQueryEntered
+            model.searchInputEntered
             (model.matchingObjectives
                 |> List.map (\id -> ( id, Dict.get id model.objectives ))
                 |> List.filterMap filterSecond
@@ -444,18 +448,18 @@ filterSecond ( a, maybeB ) =
 
 
 searchResults : String -> Bool -> List ( UniqueID, Objective, Bool ) -> Element Msg
-searchResults clientName searchQueryEntered foundObjectives =
+searchResults clientName isSearchInputEntered foundObjectives =
     El.row
         [ El.width El.fill
         , El.height El.fill
         ]
-        [ objectivesRow clientName searchQueryEntered foundObjectives ]
+        [ objectivesRow clientName isSearchInputEntered foundObjectives ]
 
 
 objectivesRow : String -> Bool -> List ( UniqueID, Objective, Bool ) -> Element Msg
-objectivesRow clientName searchQueryEntered foundObjectives =
+objectivesRow clientName isSearchInputEntered foundObjectives =
     let
-        heading = if searchQueryEntered then
+        heading = if isSearchInputEntered then
                     El.text "Results"
                   else
                     El.none
@@ -498,7 +502,7 @@ objectivesView clientName objs =
             (\( id, obj, selected ) ->
               let
                   objectiveBackgroundColor = if selected then
-                                              selectedBackground
+                                              lightBlue
                                              else
                                               lightGray
               in
@@ -514,7 +518,7 @@ lightGray =
 white =
     El.rgb 1 1 1
 
-selectedBackground =
+lightBlue =
     El.rgb255 204 229 255
 
 foundObjective id backgroundColor text =
@@ -522,7 +526,7 @@ foundObjective id backgroundColor text =
 
 
 selectedObjective id text =
-    objectiveCard (RemoveObjective id) "Remove" text selectedBackground
+    objectiveCard (RemoveObjective id) "Remove" text lightBlue
 
 
 objectiveCard : Msg -> String -> String -> El.Color -> Element Msg

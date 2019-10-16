@@ -2,6 +2,7 @@ Mystic Client
 ===
 
 ```shell script
+# install dependencies
 yarn
 
 # compile in development mode
