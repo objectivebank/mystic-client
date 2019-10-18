@@ -10,6 +10,7 @@ import Dict exposing (Dict)
 import Element as El exposing (Element)
 import Element.Background as Background
 import Element.Border as Border
+import Element.Font as Font
 import Element.Input as Input
 import Graphql.Http
 import Graphql.Operation exposing (RootQuery)
@@ -64,6 +65,14 @@ type alias ObjectiveDescription =
 
 type Objective
     = StoredObjective UniqueID ObjectiveDescription (List UniqueID) (List UniqueID)
+
+
+type alias ObjectiveCardData =
+    { id : UniqueID
+    , objective : Objective
+    , selected : Bool
+    , goalAreaDescriptions : List GoalAreaDescription
+    }
 
 
 main : Program Flags Model Msg
@@ -308,6 +317,20 @@ objectiveText obj =
             text
 
 
+objectiveGoalAreaIds : Objective -> List UniqueID
+objectiveGoalAreaIds obj =
+    case obj of
+        StoredObjective _ _ goalAreaIds _ ->
+            goalAreaIds
+
+
+goalAreaDescription : GoalArea -> String
+goalAreaDescription ga =
+    case ga of
+        StoredGoalArea _ description ->
+            description
+
+
 applicationView : Model -> Element Msg
 applicationView model =
     El.column
@@ -380,8 +403,25 @@ selectedWrapper model =
             (model.selectedObjectives
                 |> List.map (\id -> ( id, Dict.get id model.objectives ))
                 |> List.filterMap filterSecond
+                |> List.map (selectedObjectiveData model.goalAreas)
             )
         ]
+
+
+selectedObjectiveData : Dict UniqueID GoalArea -> ( UniqueID, Objective ) -> ObjectiveCardData
+selectedObjectiveData goalAreas ( id, obj ) =
+    { id = id
+    , objective = obj
+    , selected = True
+    , goalAreaDescriptions = objectiveGoalAreas (objectiveGoalAreaIds <| obj) goalAreas
+    }
+
+
+objectiveGoalAreas : List UniqueID -> Dict UniqueID GoalArea -> List GoalAreaDescription
+objectiveGoalAreas goalAreaIds goalAreas =
+    Dict.filter (\id _ -> List.member id goalAreaIds) goalAreas
+        |> Dict.values
+        |> List.map goalAreaDescription
 
 
 selectedObjectivesHeading : List UniqueID -> String
@@ -393,12 +433,16 @@ selectedObjectivesHeading selectedObjectives =
         "Selected objectives (" ++ String.fromInt (List.length selectedObjectives) ++ ")"
 
 
-selectedView : String -> List ( UniqueID, Objective ) -> Element Msg
+selectedView : String -> List ObjectiveCardData -> Element Msg
 selectedView clientName objs =
     objectivesColumn lightBlue
         white
         (List.map
-            (\( id, obj ) -> selectedObjective id <| String.replace "%1$s" clientName <| objectiveText obj)
+            (\objectiveCardData ->
+                selectedObjective objectiveCardData.id
+                    (String.replace "%1$s" clientName <| objectiveText objectiveCardData.objective)
+                    objectiveCardData.goalAreaDescriptions
+            )
             objs
         )
 
@@ -459,9 +503,18 @@ searchResultsView model =
             (model.matchingObjectives
                 |> List.map (\id -> ( id, Dict.get id model.objectives ))
                 |> List.filterMap filterSecond
-                |> List.map (\( id, obj ) -> ( id, obj, List.member id model.selectedObjectives ))
+                |> List.map (foundObjectiveData model.goalAreas model.selectedObjectives)
             )
         ]
+
+
+foundObjectiveData : Dict UniqueID GoalArea -> List UniqueID -> ( UniqueID, Objective ) -> ObjectiveCardData
+foundObjectiveData goalAreas selectedObjectiveIds ( id, obj ) =
+    { id = id
+    , objective = obj
+    , selected = List.member id selectedObjectiveIds
+    , goalAreaDescriptions = objectiveGoalAreas (objectiveGoalAreaIds <| obj) goalAreas
+    }
 
 
 filterSecond ( a, maybeB ) =
@@ -473,7 +526,7 @@ filterSecond ( a, maybeB ) =
             Nothing
 
 
-searchResults : String -> Bool -> List ( UniqueID, Objective, Bool ) -> Element Msg
+searchResults : String -> Bool -> List ObjectiveCardData -> Element Msg
 searchResults clientName isSearchInputEntered foundObjectives =
     El.row
         [ El.width El.fill
@@ -482,7 +535,7 @@ searchResults clientName isSearchInputEntered foundObjectives =
         [ objectivesRow clientName isSearchInputEntered foundObjectives ]
 
 
-objectivesRow : String -> Bool -> List ( UniqueID, Objective, Bool ) -> Element Msg
+objectivesRow : String -> Bool -> List ObjectiveCardData -> Element Msg
 objectivesRow clientName isSearchInputEntered foundObjectives =
     let
         heading =
@@ -517,7 +570,7 @@ objectivesColumn borderColor backgroundColor elements =
         elements
 
 
-objectivesView : String -> List ( UniqueID, Objective, Bool ) -> Element Msg
+objectivesView : String -> List ObjectiveCardData -> Element Msg
 objectivesView clientName objs =
     let
         borderColor =
@@ -530,16 +583,19 @@ objectivesView clientName objs =
     objectivesColumn borderColor
         white
         (List.map
-            (\( id, obj, selected ) ->
+            (\objectiveCardData ->
                 let
                     objectiveBackgroundColor =
-                        if selected then
+                        if objectiveCardData.selected then
                             lightBlue
 
                         else
                             lightGray
                 in
-                foundObjective id objectiveBackgroundColor <| String.replace "%1$s" clientName <| objectiveText obj
+                foundObjective objectiveCardData.id
+                    objectiveBackgroundColor
+                    (String.replace "%1$s" clientName <| objectiveText objectiveCardData.objective)
+                    objectiveCardData.goalAreaDescriptions
             )
             objs
         )
@@ -557,16 +613,16 @@ lightBlue =
     El.rgb255 204 229 255
 
 
-foundObjective id backgroundColor text =
-    objectiveCard (AddObjective id) "Add" text backgroundColor
+foundObjective id backgroundColor text goalAreas =
+    objectiveCard (AddObjective id) "Add" text goalAreas backgroundColor
 
 
-selectedObjective id text =
-    objectiveCard (RemoveObjective id) "Remove" text lightBlue
+selectedObjective id text goalAreas =
+    objectiveCard (RemoveObjective id) "Remove" text goalAreas lightBlue
 
 
-objectiveCard : Msg -> String -> String -> El.Color -> Element Msg
-objectiveCard buttonMsg buttonText objText backgroundColor =
+objectiveCard : Msg -> String -> String -> List GoalAreaDescription -> El.Color -> Element Msg
+objectiveCard buttonMsg buttonText objText goalAreas backgroundColor =
     El.el
         [ El.padding 5
         , El.height <| El.px 90
@@ -574,7 +630,12 @@ objectiveCard buttonMsg buttonText objText backgroundColor =
         , Background.color
             backgroundColor
         ]
-        (El.paragraph [] [ El.text objText, El.el [ El.alignRight ] (objectiveButton buttonMsg buttonText) ])
+    <|
+        El.column
+            [ El.height El.fill, El.spaceEvenly ]
+            [ El.paragraph [] [ El.text objText, El.el [ El.alignRight ] (objectiveButton buttonMsg buttonText) ]
+            , El.paragraph [ Font.size 14 ] [ El.text <| "Goal Areas: " ++ String.join ", " goalAreas ]
+            ]
 
 
 objectiveButton : Msg -> String -> Element Msg
