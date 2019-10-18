@@ -50,12 +50,20 @@ type alias UniqueID =
     Int
 
 
+type alias GoalAreaDescription =
+    String
+
+
 type GoalArea
-    = StoredGoalArea UniqueID String
+    = StoredGoalArea UniqueID GoalAreaDescription
+
+
+type alias ObjectiveDescription =
+    String
 
 
 type Objective
-    = StoredObjective UniqueID String
+    = StoredObjective UniqueID ObjectiveDescription (List UniqueID) (List UniqueID)
 
 
 main : Program Flags Model Msg
@@ -235,9 +243,11 @@ objectivesQuery searchText selectedGoalAreas =
 
 objectivesSelection : SelectionSet Objective API.Object.CategorizedObjectiveType
 objectivesSelection =
-    SelectionSet.map2 StoredObjective
+    SelectionSet.map4 StoredObjective
         CategorizedObjectiveType.id
         CategorizedObjectiveType.description
+        CategorizedObjectiveType.goalAreaIds
+        CategorizedObjectiveType.tagIds
 
 
 makeRequest : String -> (Result (Graphql.Http.Error decodesTo) decodesTo -> Msg) -> SelectionSet decodesTo RootQuery -> Cmd Msg
@@ -287,14 +297,14 @@ extractObjectivesResult result current =
 objectiveId : Objective -> UniqueID
 objectiveId obj =
     case obj of
-        StoredObjective id _ ->
+        StoredObjective id _ _ _ ->
             id
 
 
 objectiveText : Objective -> String
 objectiveText obj =
     case obj of
-        StoredObjective _ text ->
+        StoredObjective _ text _ _ ->
             text
 
 
