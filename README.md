@@ -15,5 +15,5 @@ yarn start
 yarn build
 
 # release
-node lib/deploy/index.js
+yarn release
 ```
