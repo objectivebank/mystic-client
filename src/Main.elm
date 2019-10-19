@@ -352,7 +352,7 @@ searchBarView currentSearchText =
         ]
         [ El.column [ El.width El.fill, El.spacing 8 ]
             [ El.text "Objective Search"
-            , Input.text []
+            , Input.text [ El.width <| El.maximum 500 <| El.fill ]
                 { onChange = \text -> SearchTextEntered text
                 , text = currentSearchText
                 , placeholder = Just (Input.placeholder [] <| El.text "Search...")
