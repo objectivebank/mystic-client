@@ -391,6 +391,16 @@ goalAreasView model =
 
 selectedWrapper : Model -> Element Msg
 selectedWrapper model =
+    let
+        selectedObjectives =
+            model.selectedObjectives
+                |> List.map (\id -> ( id, Dict.get id model.objectives ))
+                |> List.filterMap filterSecond
+
+        objectiveCardData =
+            selectedObjectives
+                |> List.map (selectedObjectiveData model.clientName model.goalAreas)
+    in
     El.column
         [ El.alignRight
         , El.width (El.fillPortion 10)
@@ -408,10 +418,10 @@ selectedWrapper model =
         ]
 
 
-selectedObjectiveData : Dict UniqueID GoalArea -> ( UniqueID, Objective ) -> ObjectiveCardData
-selectedObjectiveData goalAreas ( id, obj ) =
+selectedObjectiveData : String -> Dict UniqueID GoalArea -> ( UniqueID, Objective ) -> ObjectiveCardData
+selectedObjectiveData clientName goalAreas ( id, obj ) =
     { id = id
-    , objective = obj
+    , objective = interpolateClientAttributes clientName obj
     , selected = True
     , goalAreaDescriptions = objectiveGoalAreas (objectiveGoalAreaIds <| obj) goalAreas
     }
@@ -433,14 +443,14 @@ selectedObjectivesHeading selectedObjectives =
         "Selected objectives (" ++ String.fromInt (List.length selectedObjectives) ++ ")"
 
 
-selectedView : String -> List ObjectiveCardData -> Element Msg
-selectedView clientName objs =
+selectedView : List ObjectiveCardData -> Element Msg
+selectedView objs =
     objectivesColumn lightBlue
         white
         (List.map
             (\objectiveCardData ->
                 selectedObjective objectiveCardData.id
-                    (String.replace "%1$s" clientName <| objectiveText objectiveCardData.objective)
+                    (objectiveText objectiveCardData.objective)
                     objectiveCardData.goalAreaDescriptions
             )
             objs
@@ -498,23 +508,29 @@ searchResultsView model =
         , El.spacing 24
         ]
         [ searchResults
-            model.clientName
             model.searchInputEntered
             (model.matchingObjectives
                 |> List.map (\id -> ( id, Dict.get id model.objectives ))
                 |> List.filterMap filterSecond
-                |> List.map (foundObjectiveData model.goalAreas model.selectedObjectives)
+                |> List.map (foundObjectiveData model.clientName model.goalAreas model.selectedObjectives)
             )
         ]
 
 
-foundObjectiveData : Dict UniqueID GoalArea -> List UniqueID -> ( UniqueID, Objective ) -> ObjectiveCardData
-foundObjectiveData goalAreas selectedObjectiveIds ( id, obj ) =
+foundObjectiveData : String -> Dict UniqueID GoalArea -> List UniqueID -> ( UniqueID, Objective ) -> ObjectiveCardData
+foundObjectiveData clientName goalAreas selectedObjectiveIds ( id, obj ) =
     { id = id
-    , objective = obj
+    , objective = interpolateClientAttributes clientName obj
     , selected = List.member id selectedObjectiveIds
     , goalAreaDescriptions = objectiveGoalAreas (objectiveGoalAreaIds <| obj) goalAreas
     }
+
+
+interpolateClientAttributes : String -> Objective -> Objective
+interpolateClientAttributes clientName obj =
+    case obj of
+        StoredObjective id description goalAreaIds tagIds ->
+            StoredObjective id (String.replace "%1$s" clientName description) goalAreaIds tagIds
 
 
 filterSecond ( a, maybeB ) =
@@ -526,17 +542,17 @@ filterSecond ( a, maybeB ) =
             Nothing
 
 
-searchResults : String -> Bool -> List ObjectiveCardData -> Element Msg
-searchResults clientName isSearchInputEntered foundObjectives =
+searchResults : Bool -> List ObjectiveCardData -> Element Msg
+searchResults isSearchInputEntered foundObjectives =
     El.row
         [ El.width El.fill
         , El.height El.fill
         ]
-        [ objectivesRow clientName isSearchInputEntered foundObjectives ]
+        [ objectivesRow isSearchInputEntered foundObjectives ]
 
 
-objectivesRow : String -> Bool -> List ObjectiveCardData -> Element Msg
-objectivesRow clientName isSearchInputEntered foundObjectives =
+objectivesRow : Bool -> List ObjectiveCardData -> Element Msg
+objectivesRow isSearchInputEntered foundObjectives =
     let
         heading =
             if isSearchInputEntered then
@@ -551,7 +567,7 @@ objectivesRow clientName isSearchInputEntered foundObjectives =
         , El.height El.fill
         ]
         [ El.column [ El.width El.fill, El.spacing 10 ]
-            [ heading, objectivesView clientName foundObjectives ]
+            [ heading, objectivesView foundObjectives ]
         ]
 
 
@@ -570,8 +586,8 @@ objectivesColumn borderColor backgroundColor elements =
         elements
 
 
-objectivesView : String -> List ObjectiveCardData -> Element Msg
-objectivesView clientName objs =
+objectivesView : List ObjectiveCardData -> Element Msg
+objectivesView objs =
     let
         borderColor =
             if List.length objs > 0 then
@@ -594,7 +610,7 @@ objectivesView clientName objs =
                 in
                 foundObjective objectiveCardData.id
                     objectiveBackgroundColor
-                    (String.replace "%1$s" clientName <| objectiveText objectiveCardData.objective)
+                    (objectiveText objectiveCardData.objective)
                     objectiveCardData.goalAreaDescriptions
             )
             objs
