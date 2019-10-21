@@ -1,24 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>Objective Bank</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-</head>
-<body>
+    <head>
+        <meta charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <title>Objective Bank</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+    </head>
+    <body>
+        <script type="text/javascript" src="<%= htmlWebpackPlugin.files.js[0] %>"></script>
 
-    <script type="text/javascript" src="<%= htmlWebpackPlugin.files.js[0] %>"></script>
-
-    <script type="text/javascript">
-        var flags = {
-            graphqlURL: "http://localhost:8080/graphql"
-        };
-        var app = Elm.Main.init({flags: flags});
-    </script>
-
-    <script type="text/javascript">
-        new ClipboardJS('#copy-button');
-    </script>
-</body>
+        <script type="text/javascript">
+            var flags = {
+                graphqlURL: "http://localhost:8080/graphql"
+            };
+            var app = Elm.Main.init({flags: flags});
+        </script>
+    </body>
 </html>
