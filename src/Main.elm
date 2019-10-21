@@ -6,6 +6,7 @@ import API.Object.GoalAreaType as GoalAreaType
 import API.Query as Query
 import Browser exposing (Document)
 import Browser.Navigation exposing (Key)
+import Clippy exposing (clippy)
 import Dict exposing (Dict)
 import Element as El exposing (Element)
 import Element.Background as Background
@@ -17,7 +18,7 @@ import Graphql.Operation exposing (RootQuery)
 import Graphql.OptionalArgument exposing (OptionalArgument(..))
 import Graphql.SelectionSet as SelectionSet exposing (SelectionSet)
 import Html exposing (Html)
-import Html.Attributes exposing (attribute, id)
+import Html.Attributes as Attributes
 import Url exposing (Url)
 
 
@@ -414,8 +415,10 @@ selectedWrapper model =
         , El.scrollbarY
         , El.paddingEach { top = 10, right = 0, bottom = 0, left = 10 }
         ]
-        [ El.text <| selectedObjectivesHeading model.selectedObjectives
-        , copyButton objectiveCardData
+        [ El.row [ El.height <| El.maximum 30 <| El.fill, El.width El.fill, El.spaceEvenly ]
+            [ El.text <| selectedObjectivesHeading model.selectedObjectives
+            , copyButton objectiveCardData
+            ]
         , selectedView objectiveCardData
         ]
 
@@ -427,10 +430,11 @@ copyButton objectiveCardData =
             String.join "\n" <| List.map (objectiveText << .objective) objectiveCardData
     in
     Html.button
-        [ id "copy-button"
-        , attribute "data-clipboard-text" copyableObjectives
+        [ Attributes.id "copy-button"
+        , Attributes.title "Copy objectives"
+        , Attributes.attribute "data-clipboard-text" copyableObjectives
         ]
-        []
+        [ clippy "copy-button-image" ]
         |> El.html
 
 
