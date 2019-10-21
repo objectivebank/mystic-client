@@ -6,15 +6,19 @@ import API.Object.GoalAreaType as GoalAreaType
 import API.Query as Query
 import Browser exposing (Document)
 import Browser.Navigation exposing (Key)
+import Clippy exposing (clippy)
 import Dict exposing (Dict)
 import Element as El exposing (Element)
 import Element.Background as Background
 import Element.Border as Border
+import Element.Font as Font
 import Element.Input as Input
 import Graphql.Http
 import Graphql.Operation exposing (RootQuery)
 import Graphql.OptionalArgument exposing (OptionalArgument(..))
 import Graphql.SelectionSet as SelectionSet exposing (SelectionSet)
+import Html exposing (Html)
+import Html.Attributes as Attributes
 import Url exposing (Url)
 
 
@@ -32,7 +36,8 @@ type alias Model =
 
 
 type Msg
-    = AddObjective UniqueID
+    = NoOp
+    | AddObjective UniqueID
     | RemoveObjective UniqueID
     | UrlRequest
     | SearchTextEntered String
@@ -50,12 +55,28 @@ type alias UniqueID =
     Int
 
 
+type alias GoalAreaDescription =
+    String
+
+
 type GoalArea
-    = StoredGoalArea UniqueID String
+    = StoredGoalArea UniqueID GoalAreaDescription
+
+
+type alias ObjectiveDescription =
+    String
 
 
 type Objective
-    = StoredObjective UniqueID String
+    = StoredObjective UniqueID ObjectiveDescription (List UniqueID) (List UniqueID)
+
+
+type alias ObjectiveCardData =
+    { id : UniqueID
+    , objective : Objective
+    , selected : Bool
+    , goalAreaDescriptions : List GoalAreaDescription
+    }
 
 
 main : Program Flags Model Msg
@@ -103,6 +124,9 @@ view model =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        NoOp ->
+            ( model, Cmd.none )
+
         AddObjective id ->
             ( { model
                 | selectedObjectives =
@@ -130,8 +154,11 @@ update msg model =
                 interimMatching =
                     matchingForSearchInput model.matchingObjectives newText model.selectedGoalAreas
             in
-            ( { model | objectiveSearchText = newText, matchingObjectives = interimMatching
-                        , searchInputEntered = searchInputEntered newText model.selectedObjectives  }
+            ( { model
+                | objectiveSearchText = newText
+                , matchingObjectives = interimMatching
+                , searchInputEntered = searchInputEntered newText model.selectedObjectives
+              }
             , objectivesSearch model.graphqlURL newText model.selectedGoalAreas
             )
 
@@ -151,8 +178,11 @@ update msg model =
                 interimMatching =
                     matchingForSearchInput model.matchingObjectives model.objectiveSearchText newSelection
             in
-            ( { model | selectedGoalAreas = newSelection, matchingObjectives = interimMatching
-                        , searchInputEntered = searchInputEntered model.objectiveSearchText newSelection}
+            ( { model
+                | selectedGoalAreas = newSelection
+                , matchingObjectives = interimMatching
+                , searchInputEntered = searchInputEntered model.objectiveSearchText newSelection
+              }
             , objectivesSearch model.graphqlURL model.objectiveSearchText newSelection
             )
 
@@ -171,9 +201,11 @@ update msg model =
             , Cmd.none
             )
 
-searchInputEntered : String -> List (UniqueID) -> Bool
+
+searchInputEntered : String -> List UniqueID -> Bool
 searchInputEntered searchText selectedGoalAreaIds =
     String.length searchText > 0 || List.length selectedGoalAreaIds > 0
+
 
 goalAreasQuery : SelectionSet (List GoalArea) RootQuery
 goalAreasQuery =
@@ -190,7 +222,8 @@ goalAreaSelection =
 matchingForSearchInput : List UniqueID -> String -> List UniqueID -> List UniqueID
 matchingForSearchInput currentMatchingObjectives searchText selectedGoalAreaIds =
     if searchInputEntered searchText selectedGoalAreaIds then
-      currentMatchingObjectives
+        currentMatchingObjectives
+
     else
         []
 
@@ -226,9 +259,11 @@ objectivesQuery searchText selectedGoalAreas =
 
 objectivesSelection : SelectionSet Objective API.Object.CategorizedObjectiveType
 objectivesSelection =
-    SelectionSet.map2 StoredObjective
+    SelectionSet.map4 StoredObjective
         CategorizedObjectiveType.id
         CategorizedObjectiveType.description
+        CategorizedObjectiveType.goalAreaIds
+        CategorizedObjectiveType.tagIds
 
 
 makeRequest : String -> (Result (Graphql.Http.Error decodesTo) decodesTo -> Msg) -> SelectionSet decodesTo RootQuery -> Cmd Msg
@@ -278,15 +313,29 @@ extractObjectivesResult result current =
 objectiveId : Objective -> UniqueID
 objectiveId obj =
     case obj of
-        StoredObjective id _ ->
+        StoredObjective id _ _ _ ->
             id
 
 
 objectiveText : Objective -> String
 objectiveText obj =
     case obj of
-        StoredObjective _ text ->
+        StoredObjective _ text _ _ ->
             text
+
+
+objectiveGoalAreaIds : Objective -> List UniqueID
+objectiveGoalAreaIds obj =
+    case obj of
+        StoredObjective _ _ goalAreaIds _ ->
+            goalAreaIds
+
+
+goalAreaDescription : GoalArea -> String
+goalAreaDescription ga =
+    case ga of
+        StoredGoalArea _ description ->
+            description
 
 
 applicationView : Model -> Element Msg
@@ -306,10 +355,11 @@ searchBarView : String -> Element Msg
 searchBarView currentSearchText =
     El.row
         [ El.width El.fill
-         , El.paddingEach { top = 10, right = 10, bottom = 10, left = 10}]
+        , El.paddingEach { top = 10, right = 10, bottom = 10, left = 10 }
+        ]
         [ El.column [ El.width El.fill, El.spacing 8 ]
             [ El.text "Objective Search"
-            , Input.text []
+            , Input.text [ El.width <| El.maximum 500 <| El.fill ]
                 { onChange = \text -> SearchTextEntered text
                 , text = currentSearchText
                 , placeholder = Just (Input.placeholder [] <| El.text "Search...")
@@ -324,7 +374,7 @@ middleView model =
     El.row
         [ El.width El.fill
         , El.height <| El.px 500
-        , El.paddingEach { top = 0, right = 10, bottom = 0, left = 10}
+        , El.paddingEach { top = 0, right = 10, bottom = 0, left = 10 }
         ]
         [ goalAreasView model
         , centerGap
@@ -338,44 +388,91 @@ goalAreasView model =
         [ El.alignTop
         , El.width (El.fillPortion 7)
         , El.spaceEvenly
-        , El.paddingEach { top = 10, right = 0, bottom = 10, left = 0}
+        , El.paddingEach { top = 10, right = 0, bottom = 10, left = 0 }
         ]
-            [  El.text "Goal Areas"
-            , goalAreaCheckboxes model.goalAreas model.selectedGoalAreas
-            , clientVariablesView model
-            ]
-
+        [ El.text "Goal Areas"
+        , goalAreaCheckboxes model.goalAreas model.selectedGoalAreas
+        , clientVariablesView model
+        ]
 
 
 selectedWrapper : Model -> Element Msg
 selectedWrapper model =
+    let
+        selectedObjectives =
+            model.selectedObjectives
+                |> List.map (\id -> ( id, Dict.get id model.objectives ))
+                |> List.filterMap filterSecond
+
+        objectiveCardData =
+            selectedObjectives
+                |> List.map (selectedObjectiveData model.clientName model.goalAreas)
+    in
     El.column
         [ El.alignRight
         , El.width (El.fillPortion 10)
         , El.height El.fill
         , El.scrollbarY
-        , El.paddingEach { top = 10, right = 0, bottom = 0, left = 10}
+        , El.paddingEach { top = 10, right = 0, bottom = 0, left = 10 }
         ]
-        [ El.text <| selectedObjectivesHeading model.selectedObjectives
-        , selectedView model.clientName
-            (model.selectedObjectives
-                |> List.map (\id -> ( id, Dict.get id model.objectives ))
-                |> List.filterMap filterSecond
-            )
+        [ El.row [ El.height <| El.maximum 30 <| El.fill, El.width El.fill, El.spaceEvenly ]
+            [ El.text <| selectedObjectivesHeading model.selectedObjectives
+            , copyButton objectiveCardData
+            ]
+        , selectedView objectiveCardData
         ]
 
-selectedObjectivesHeading : List (UniqueID) -> String
+
+copyButton : List ObjectiveCardData -> Element Msg
+copyButton objectiveCardData =
+    let
+        copyableObjectives =
+            String.join "\n" <| List.map (objectiveText << .objective) objectiveCardData
+    in
+    Html.button
+        [ Attributes.id "copy-button"
+        , Attributes.title "Copy objectives"
+        , Attributes.attribute "data-clipboard-text" copyableObjectives
+        ]
+        [ clippy "copy-button-image" ]
+        |> El.html
+
+
+selectedObjectiveData : String -> Dict UniqueID GoalArea -> ( UniqueID, Objective ) -> ObjectiveCardData
+selectedObjectiveData clientName goalAreas ( id, obj ) =
+    { id = id
+    , objective = interpolateClientAttributes clientName obj
+    , selected = True
+    , goalAreaDescriptions = objectiveGoalAreas (objectiveGoalAreaIds <| obj) goalAreas
+    }
+
+
+objectiveGoalAreas : List UniqueID -> Dict UniqueID GoalArea -> List GoalAreaDescription
+objectiveGoalAreas goalAreaIds goalAreas =
+    Dict.filter (\id _ -> List.member id goalAreaIds) goalAreas
+        |> Dict.values
+        |> List.map goalAreaDescription
+
+
+selectedObjectivesHeading : List UniqueID -> String
 selectedObjectivesHeading selectedObjectives =
     if List.length selectedObjectives == 0 then
-      "Selected objectives"
-    else
-      "Selected objectives (" ++ String.fromInt (List.length selectedObjectives) ++ ")"
+        "Selected objectives"
 
-selectedView : String -> List ( UniqueID, Objective ) -> Element Msg
-selectedView clientName objs =
-    objectivesColumn lightBlue white
+    else
+        "Selected objectives (" ++ String.fromInt (List.length selectedObjectives) ++ ")"
+
+
+selectedView : List ObjectiveCardData -> Element Msg
+selectedView objs =
+    objectivesColumn lightBlue
+        white
         (List.map
-            (\( id, obj ) -> selectedObjective id <| String.replace "%1$s" clientName <| objectiveText obj)
+            (\objectiveCardData ->
+                selectedObjective objectiveCardData.id
+                    (objectiveText objectiveCardData.objective)
+                    objectiveCardData.goalAreaDescriptions
+            )
             objs
         )
 
@@ -387,9 +484,10 @@ centerGap =
 
 goalAreaCheckboxes : Dict UniqueID GoalArea -> List UniqueID -> Element Msg
 goalAreaCheckboxes goalAreas selectedGoalAreas =
-    El.column [El.paddingXY 0 10]
-    <| (Dict.toList goalAreas
-        |> List.map (\( id, ga ) -> goalAreaCheckbox id (List.member id selectedGoalAreas) (goalAreaText ga)))
+    El.column [ El.paddingXY 0 10 ] <|
+        (Dict.toList goalAreas
+            |> List.map (\( id, ga ) -> goalAreaCheckbox id (List.member id selectedGoalAreas) (goalAreaText ga))
+        )
 
 
 goalAreaCheckbox : UniqueID -> Bool -> String -> Element Msg
@@ -424,18 +522,35 @@ clientNameInput currentName =
 
 searchResultsView : Model -> Element Msg
 searchResultsView model =
-    El.column [ El.width El.fill
-    , El.paddingEach { top = 0, right = 10, bottom = 10, left = 10}
-    , El.spacing 24 ]
+    El.column
+        [ El.width El.fill
+        , El.paddingEach { top = 0, right = 10, bottom = 10, left = 10 }
+        , El.spacing 24
+        ]
         [ searchResults
-            model.clientName
             model.searchInputEntered
             (model.matchingObjectives
                 |> List.map (\id -> ( id, Dict.get id model.objectives ))
                 |> List.filterMap filterSecond
-                |> List.map (\(id, obj) -> (id, obj, List.member id model.selectedObjectives))
+                |> List.map (foundObjectiveData model.clientName model.goalAreas model.selectedObjectives)
             )
         ]
+
+
+foundObjectiveData : String -> Dict UniqueID GoalArea -> List UniqueID -> ( UniqueID, Objective ) -> ObjectiveCardData
+foundObjectiveData clientName goalAreas selectedObjectiveIds ( id, obj ) =
+    { id = id
+    , objective = interpolateClientAttributes clientName obj
+    , selected = List.member id selectedObjectiveIds
+    , goalAreaDescriptions = objectiveGoalAreas (objectiveGoalAreaIds <| obj) goalAreas
+    }
+
+
+interpolateClientAttributes : String -> Objective -> Objective
+interpolateClientAttributes clientName obj =
+    case obj of
+        StoredObjective id description goalAreaIds tagIds ->
+            StoredObjective id (String.replace "%1$s" clientName description) goalAreaIds tagIds
 
 
 filterSecond ( a, maybeB ) =
@@ -447,32 +562,33 @@ filterSecond ( a, maybeB ) =
             Nothing
 
 
-searchResults : String -> Bool -> List ( UniqueID, Objective, Bool ) -> Element Msg
-searchResults clientName isSearchInputEntered foundObjectives =
+searchResults : Bool -> List ObjectiveCardData -> Element Msg
+searchResults isSearchInputEntered foundObjectives =
     El.row
         [ El.width El.fill
         , El.height El.fill
         ]
-        [ objectivesRow clientName isSearchInputEntered foundObjectives ]
+        [ objectivesRow isSearchInputEntered foundObjectives ]
 
 
-objectivesRow : String -> Bool -> List ( UniqueID, Objective, Bool ) -> Element Msg
-objectivesRow clientName isSearchInputEntered foundObjectives =
+objectivesRow : Bool -> List ObjectiveCardData -> Element Msg
+objectivesRow isSearchInputEntered foundObjectives =
     let
-        heading = if isSearchInputEntered then
-                    El.text "Results"
-                  else
-                    El.none
+        heading =
+            if isSearchInputEntered then
+                El.text "Results"
+
+            else
+                El.none
     in
     El.row
         [ El.spaceEvenly
         , El.width El.fill
         , El.height El.fill
-        ] [
-          El.column [El.width El.fill, El.spacing 10]
-          [ heading, objectivesView clientName foundObjectives ]
         ]
-
+        [ El.column [ El.width El.fill, El.spacing 10 ]
+            [ heading, objectivesView foundObjectives ]
+        ]
 
 
 objectivesColumn : El.Color -> El.Color -> List (Element msg) -> Element msg
@@ -490,23 +606,33 @@ objectivesColumn borderColor backgroundColor elements =
         elements
 
 
-objectivesView : String -> List ( UniqueID, Objective, Bool ) -> Element Msg
-objectivesView clientName objs =
-    let borderColor = if List.length objs > 0 then
-                        lightGray
-                      else
-                        white
+objectivesView : List ObjectiveCardData -> Element Msg
+objectivesView objs =
+    let
+        borderColor =
+            if List.length objs > 0 then
+                lightGray
+
+            else
+                white
     in
-    objectivesColumn borderColor white
+    objectivesColumn borderColor
+        white
         (List.map
-            (\( id, obj, selected ) ->
-              let
-                  objectiveBackgroundColor = if selected then
-                                              lightBlue
-                                             else
-                                              lightGray
-              in
-              foundObjective id objectiveBackgroundColor <| String.replace "%1$s" clientName <| objectiveText obj)
+            (\objectiveCardData ->
+                let
+                    objectiveBackgroundColor =
+                        if objectiveCardData.selected then
+                            lightBlue
+
+                        else
+                            lightGray
+                in
+                foundObjective objectiveCardData.id
+                    objectiveBackgroundColor
+                    (objectiveText objectiveCardData.objective)
+                    objectiveCardData.goalAreaDescriptions
+            )
             objs
         )
 
@@ -518,19 +644,21 @@ lightGray =
 white =
     El.rgb 1 1 1
 
+
 lightBlue =
     El.rgb255 204 229 255
 
-foundObjective id backgroundColor text =
-    objectiveCard (AddObjective id) "Add" text backgroundColor
+
+foundObjective id backgroundColor text goalAreas =
+    objectiveCard (AddObjective id) "Add" text goalAreas backgroundColor
 
 
-selectedObjective id text =
-    objectiveCard (RemoveObjective id) "Remove" text lightBlue
+selectedObjective id text goalAreas =
+    objectiveCard (RemoveObjective id) "Remove" text goalAreas lightBlue
 
 
-objectiveCard : Msg -> String -> String -> El.Color -> Element Msg
-objectiveCard buttonMsg buttonText objText backgroundColor =
+objectiveCard : Msg -> String -> String -> List GoalAreaDescription -> El.Color -> Element Msg
+objectiveCard buttonMsg buttonText objText goalAreas backgroundColor =
     El.el
         [ El.padding 5
         , El.height <| El.px 90
@@ -538,7 +666,12 @@ objectiveCard buttonMsg buttonText objText backgroundColor =
         , Background.color
             backgroundColor
         ]
-        (El.paragraph [] [ El.text objText, El.el [ El.alignRight ] (objectiveButton buttonMsg buttonText) ])
+    <|
+        El.column
+            [ El.height El.fill, El.spaceEvenly ]
+            [ El.paragraph [] [ El.text objText, El.el [ El.alignRight ] (objectiveButton buttonMsg buttonText) ]
+            , El.paragraph [ Font.size 14 ] [ El.text <| "Goal Areas: " ++ String.join ", " goalAreas ]
+            ]
 
 
 objectiveButton : Msg -> String -> Element Msg
