@@ -16,6 +16,8 @@ import Graphql.Http
 import Graphql.Operation exposing (RootQuery)
 import Graphql.OptionalArgument exposing (OptionalArgument(..))
 import Graphql.SelectionSet as SelectionSet exposing (SelectionSet)
+import Html exposing (Html)
+import Html.Attributes exposing (attribute, id)
 import Url exposing (Url)
 
 
@@ -33,7 +35,8 @@ type alias Model =
 
 
 type Msg
-    = AddObjective UniqueID
+    = NoOp
+    | AddObjective UniqueID
     | RemoveObjective UniqueID
     | UrlRequest
     | SearchTextEntered String
@@ -120,6 +123,9 @@ view model =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        NoOp ->
+            ( model, Cmd.none )
+
         AddObjective id ->
             ( { model
                 | selectedObjectives =
@@ -409,13 +415,23 @@ selectedWrapper model =
         , El.paddingEach { top = 10, right = 0, bottom = 0, left = 10 }
         ]
         [ El.text <| selectedObjectivesHeading model.selectedObjectives
-        , selectedView model.clientName
-            (model.selectedObjectives
-                |> List.map (\id -> ( id, Dict.get id model.objectives ))
-                |> List.filterMap filterSecond
-                |> List.map (selectedObjectiveData model.goalAreas)
-            )
+        , copyButton objectiveCardData
+        , selectedView objectiveCardData
         ]
+
+
+copyButton : List ObjectiveCardData -> Element Msg
+copyButton objectiveCardData =
+    let
+        copyableObjectives =
+            String.join "\n" <| List.map (objectiveText << .objective) objectiveCardData
+    in
+    Html.button
+        [ id "copy-button"
+        , attribute "data-clipboard-text" copyableObjectives
+        ]
+        []
+        |> El.html
 
 
 selectedObjectiveData : String -> Dict UniqueID GoalArea -> ( UniqueID, Objective ) -> ObjectiveCardData
