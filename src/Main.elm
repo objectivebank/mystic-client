@@ -668,8 +668,11 @@ objectiveCard buttonMsg buttonText objText goalAreas backgroundColor =
         ]
     <|
         El.column
-            [ El.height El.fill, El.spaceEvenly ]
-            [ El.paragraph [] [ El.text objText, El.el [ El.alignRight ] (objectiveButton buttonMsg buttonText) ]
+            [ El.height El.fill, El.spaceEvenly, El.width El.fill ]
+            [ El.row [ El.width <| El.fillPortion 9, El.spaceEvenly ]
+                [ El.paragraph [] [ El.text objText ]
+                , El.el [ El.width <| El.minimum 30 <| El.fillPortion 1, El.alignRight, El.alignTop ] (objectiveButton buttonMsg buttonText)
+                ]
             , El.paragraph [ Font.size 14 ] [ El.text <| "Goal Areas: " ++ String.join ", " goalAreas ]
             ]
 
