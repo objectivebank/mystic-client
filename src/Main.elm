@@ -1,82 +1,19 @@
 module Main exposing (main)
 
-import API.Object
-import API.Object.CategorizedObjectiveType as CategorizedObjectiveType
-import API.Object.GoalAreaType as GoalAreaType
-import API.Query as Query
+import API exposing (goalAreasQuery, objectivesSearch)
 import Browser exposing (Document)
 import Browser.Navigation exposing (Key)
 import Clippy exposing (clippy)
+import Data.Types exposing (..)
 import Dict exposing (Dict)
 import Element as El exposing (Element)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
-import Graphql.Http
-import Graphql.Operation exposing (RootQuery)
-import Graphql.OptionalArgument exposing (OptionalArgument(..))
-import Graphql.SelectionSet as SelectionSet exposing (SelectionSet)
 import Html exposing (Html)
 import Html.Attributes as Attributes
 import Url exposing (Url)
-
-
-type alias Model =
-    { objectives : Dict UniqueID Objective
-    , objectiveSearchText : String
-    , matchingObjectives : List UniqueID
-    , selectedObjectives : List UniqueID
-    , goalAreas : Dict UniqueID GoalArea
-    , selectedGoalAreas : List UniqueID
-    , clientName : String
-    , graphqlURL : String
-    , searchInputEntered : Bool
-    }
-
-
-type Msg
-    = NoOp
-    | AddObjective UniqueID
-    | RemoveObjective UniqueID
-    | UrlRequest
-    | SearchTextEntered String
-    | GoalAreaToggled UniqueID Bool
-    | ClientNameUpdated String
-    | GoalAreasResponse (Result (Graphql.Http.Error (List GoalArea)) (List GoalArea))
-    | ObjectivesResponse (Result (Graphql.Http.Error (List Objective)) (List Objective))
-
-
-type alias Flags =
-    { graphqlURL : String }
-
-
-type alias UniqueID =
-    Int
-
-
-type alias GoalAreaDescription =
-    String
-
-
-type GoalArea
-    = StoredGoalArea UniqueID GoalAreaDescription
-
-
-type alias ObjectiveDescription =
-    String
-
-
-type Objective
-    = StoredObjective UniqueID ObjectiveDescription (List UniqueID) (List UniqueID)
-
-
-type alias ObjectiveCardData =
-    { id : UniqueID
-    , objective : Objective
-    , selected : Bool
-    , goalAreaDescriptions : List GoalAreaDescription
-    }
 
 
 main : Program Flags Model Msg
@@ -103,7 +40,7 @@ init flags _ _ =
       , graphqlURL = flags.graphqlURL
       , searchInputEntered = False
       }
-    , makeRequest flags.graphqlURL GoalAreasResponse goalAreasQuery
+    , goalAreasQuery flags.graphqlURL GoalAreasResponse
     )
 
 
@@ -159,7 +96,11 @@ update msg model =
                 , matchingObjectives = interimMatching
                 , searchInputEntered = searchInputEntered newText model.selectedObjectives
               }
-            , objectivesSearch model.graphqlURL newText model.selectedGoalAreas
+            , if searchInputEntered newText model.selectedGoalAreas then
+                objectivesSearch model.graphqlURL ObjectivesResponse newText model.selectedGoalAreas
+
+              else
+                Cmd.none
             )
 
         GoalAreaToggled id isSelected ->
@@ -183,7 +124,11 @@ update msg model =
                 , matchingObjectives = interimMatching
                 , searchInputEntered = searchInputEntered model.objectiveSearchText newSelection
               }
-            , objectivesSearch model.graphqlURL model.objectiveSearchText newSelection
+            , if searchInputEntered model.objectiveSearchText newSelection then
+                objectivesSearch model.graphqlURL ObjectivesResponse model.objectiveSearchText newSelection
+
+              else
+                Cmd.none
             )
 
         ClientNameUpdated newName ->
@@ -207,18 +152,6 @@ searchInputEntered searchText selectedGoalAreaIds =
     String.length searchText > 0 || List.length selectedGoalAreaIds > 0
 
 
-goalAreasQuery : SelectionSet (List GoalArea) RootQuery
-goalAreasQuery =
-    Query.goalAreas goalAreaSelection
-
-
-goalAreaSelection : SelectionSet GoalArea API.Object.GoalAreaType
-goalAreaSelection =
-    SelectionSet.map2 StoredGoalArea
-        GoalAreaType.id
-        GoalAreaType.description
-
-
 matchingForSearchInput : List UniqueID -> String -> List UniqueID -> List UniqueID
 matchingForSearchInput currentMatchingObjectives searchText selectedGoalAreaIds =
     if searchInputEntered searchText selectedGoalAreaIds then
@@ -226,49 +159,6 @@ matchingForSearchInput currentMatchingObjectives searchText selectedGoalAreaIds 
 
     else
         []
-
-
-objectivesSearch : String -> String -> List UniqueID -> Cmd Msg
-objectivesSearch graphqlURL searchText selectedGoalAreaIds =
-    if searchInputEntered searchText selectedGoalAreaIds then
-        makeRequest graphqlURL ObjectivesResponse <| objectivesQuery searchText selectedGoalAreaIds
-
-    else
-        Cmd.none
-
-
-objectivesQuery : String -> List UniqueID -> SelectionSet (List Objective) RootQuery
-objectivesQuery searchText selectedGoalAreas =
-    let
-        q =
-            if String.length searchText > 0 then
-                Present searchText
-
-            else
-                Absent
-
-        goalAreaIds =
-            if List.length selectedGoalAreas > 0 then
-                Present selectedGoalAreas
-
-            else
-                Absent
-    in
-    Query.objectives { filter = { q = q, goalAreaIds = goalAreaIds } } objectivesSelection
-
-
-objectivesSelection : SelectionSet Objective API.Object.CategorizedObjectiveType
-objectivesSelection =
-    SelectionSet.map4 StoredObjective
-        CategorizedObjectiveType.id
-        CategorizedObjectiveType.description
-        CategorizedObjectiveType.goalAreaIds
-        CategorizedObjectiveType.tagIds
-
-
-makeRequest : String -> (Result (Graphql.Http.Error decodesTo) decodesTo -> Msg) -> SelectionSet decodesTo RootQuery -> Cmd Msg
-makeRequest graphqlUrl msgFunction selectionsSet =
-    Graphql.Http.send msgFunction <| Graphql.Http.queryRequest graphqlUrl selectionsSet
 
 
 setGoalAreas result default =
