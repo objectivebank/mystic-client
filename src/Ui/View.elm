@@ -118,6 +118,8 @@ copyButton objectiveCardData =
         [ Attributes.id "copy-button"
         , Attributes.title "Copy objectives"
         , Attributes.attribute "data-clipboard-text" copyableObjectives
+        , Attributes.style "background-color" "unset"
+        , Attributes.style "border-width" "0"
         ]
         [ clippy "copy-button-image" ]
         |> El.html
