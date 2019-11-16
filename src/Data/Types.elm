@@ -137,7 +137,7 @@ interpolateClientAttributes : String -> Objective -> Objective
 interpolateClientAttributes clientName obj =
     case obj of
         StoredObjective id description goalAreaIds tagIds ->
-            StoredObjective id (String.replace "%1$s" clientName description) goalAreaIds tagIds
+            StoredObjective id (String.replace "{client_name}" clientName description) goalAreaIds tagIds
 
 
 selectedObjectiveData : String -> Dict UniqueID GoalArea -> ( UniqueID, Objective ) -> ObjectiveCardData
