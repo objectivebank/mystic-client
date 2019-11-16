@@ -58,7 +58,7 @@ middleView : Model -> Element Msg
 middleView model =
     El.row
         [ El.width El.fill
-        , El.height <| El.px 500
+        , El.height <| El.px 600
         , El.paddingEach { top = 0, right = 10, bottom = 0, left = 10 }
         ]
         [ goalAreasView model
@@ -163,16 +163,18 @@ goalAreaCheckbox id checked labelText =
 
 clientVariablesView : Model -> Element Msg
 clientVariablesView model =
-    El.column []
+    El.column [ El.height El.fill ]
         [ El.row
-            []
-            [ clientPronounsInput model.clientPronouns ]
-        , El.row
             [ El.width El.fill
-            , El.height El.fill
+            , El.height <| El.fillPortion 2
             , El.paddingXY 0 30
             ]
             [ clientNameInput model.clientName ]
+        , El.row
+            [ El.width El.fill
+            , El.height <| El.fillPortion 3
+            ]
+            [ clientPronounsInput model.clientPronouns ]
         ]
 
 
