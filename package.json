@@ -7,6 +7,7 @@
   "scripts": {
     "dev": "webpack --mode development",
     "build": "webpack --mode production",
+    "watch": "webpack --watch",
     "start": "webpack-dev-server --open",
     "release": "yarn build && node lib/deploy/index.js"
   },
