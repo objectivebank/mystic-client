@@ -1,5 +1,6 @@
 module Data.Types exposing (..)
 
+import Common exposing (filterSecond)
 import Dict exposing (Dict)
 import Graphql.Http
 
@@ -59,3 +60,85 @@ type alias ObjectiveCardData =
     , selected : Bool
     , goalAreaDescriptions : List GoalAreaDescription
     }
+
+
+goalAreaId : GoalArea -> UniqueID
+goalAreaId ga =
+    case ga of
+        StoredGoalArea id _ ->
+            id
+
+
+goalAreaText : GoalArea -> String
+goalAreaText ga =
+    case ga of
+        StoredGoalArea _ text ->
+            text
+
+
+objectiveId : Objective -> UniqueID
+objectiveId obj =
+    case obj of
+        StoredObjective id _ _ _ ->
+            id
+
+
+objectiveText : Objective -> String
+objectiveText obj =
+    case obj of
+        StoredObjective _ text _ _ ->
+            text
+
+
+objectiveGoalAreaIds : Objective -> List UniqueID
+objectiveGoalAreaIds obj =
+    case obj of
+        StoredObjective _ _ goalAreaIds _ ->
+            goalAreaIds
+
+
+goalAreaDescription : GoalArea -> String
+goalAreaDescription ga =
+    case ga of
+        StoredGoalArea _ description ->
+            description
+
+
+makeObjectiveCardData : Model -> List ObjectiveCardData
+makeObjectiveCardData model =
+    model.matchingObjectives
+        |> List.map (\id -> ( id, Dict.get id model.objectives ))
+        |> List.filterMap filterSecond
+        |> List.map (foundObjectiveData model.clientName model.goalAreas model.selectedObjectives)
+
+
+foundObjectiveData : String -> Dict UniqueID GoalArea -> List UniqueID -> ( UniqueID, Objective ) -> ObjectiveCardData
+foundObjectiveData clientName goalAreas selectedObjectiveIds ( id, obj ) =
+    { id = id
+    , objective = interpolateClientAttributes clientName obj
+    , selected = List.member id selectedObjectiveIds
+    , goalAreaDescriptions = objectiveGoalAreas (objectiveGoalAreaIds <| obj) goalAreas
+    }
+
+
+interpolateClientAttributes : String -> Objective -> Objective
+interpolateClientAttributes clientName obj =
+    case obj of
+        StoredObjective id description goalAreaIds tagIds ->
+            StoredObjective id (String.replace "%1$s" clientName description) goalAreaIds tagIds
+
+
+selectedObjectiveData : String -> Dict UniqueID GoalArea -> ( UniqueID, Objective ) -> ObjectiveCardData
+selectedObjectiveData clientName goalAreas ( id, obj ) =
+    { id = id
+    , objective = interpolateClientAttributes clientName obj
+    , selected = True
+    , goalAreaDescriptions = objectiveGoalAreas (objectiveGoalAreaIds <| obj) goalAreas
+    }
+
+
+objectiveGoalAreas : List UniqueID -> Dict UniqueID GoalArea -> List GoalAreaDescription
+objectiveGoalAreas goalAreaIds goalAreas =
+    Dict.filter (\id _ -> List.member id goalAreaIds) goalAreas
+        |> Dict.values
+        |> List.map goalAreaDescription
