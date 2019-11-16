@@ -12,7 +12,7 @@ type alias Model =
     , selectedObjectives : List UniqueID
     , goalAreas : Dict UniqueID GoalArea
     , selectedGoalAreas : List UniqueID
-    , clientName : String
+    , clientName : ClientName
     , graphqlURL : String
     , searchInputEntered : Bool
     }
@@ -32,6 +32,10 @@ type Msg
 
 type alias UniqueID =
     Int
+
+
+type alias ClientName =
+    String
 
 
 type alias GoalAreaDescription =

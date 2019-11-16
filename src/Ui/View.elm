@@ -3,7 +3,7 @@ module Ui.View exposing (..)
 import Browser exposing (Document)
 import Clippy exposing (clippy)
 import Common exposing (filterSecond)
-import Data.Types exposing (Flags, GoalArea, GoalAreaDescription, Model, Msg(..), ObjectiveCardData, UniqueID, goalAreaText, makeObjectiveCardData, objectiveText, selectedObjectiveData)
+import Data.Types exposing (ClientName, Flags, GoalArea, GoalAreaDescription, Model, Msg(..), ObjectiveCardData, UniqueID, goalAreaText, makeObjectiveCardData, objectiveText, selectedObjectiveData)
 import Dict exposing (Dict)
 import Element as El exposing (Element)
 import Element.Background as Background
@@ -125,7 +125,7 @@ copyButton objectiveCardData =
         |> El.html
 
 
-clientNameInput : String -> Element Msg
+clientNameInput : ClientName -> Element Msg
 clientNameInput currentName =
     Input.text [ El.width <| El.maximum 500 <| El.fill ]
         { onChange = ClientNameUpdated
