@@ -13,6 +13,7 @@ type alias Model =
     , goalAreas : Dict UniqueID GoalArea
     , selectedGoalAreas : List UniqueID
     , clientName : ClientName
+    , clientPronouns : ClientPronouns
     , graphqlURL : String
     , searchInputEntered : Bool
     }
@@ -25,7 +26,8 @@ type Msg
     | UrlRequest
     | SearchTextEntered String
     | GoalAreaToggled UniqueID Bool
-    | ClientNameUpdated String
+    | ClientNameUpdated ClientName
+    | ClientPronounsUpdated ClientPronouns
     | GoalAreasResponse (Result (Graphql.Http.Error (List GoalArea)) (List GoalArea))
     | ObjectivesResponse (Result (Graphql.Http.Error (List Objective)) (List Objective))
 
@@ -36,6 +38,12 @@ type alias UniqueID =
 
 type alias ClientName =
     String
+
+
+type ClientPronouns
+    = They
+    | He
+    | She
 
 
 type alias GoalAreaDescription =

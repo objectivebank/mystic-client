@@ -3,7 +3,7 @@ module Ui.View exposing (..)
 import Browser exposing (Document)
 import Clippy exposing (clippy)
 import Common exposing (filterSecond)
-import Data.Types exposing (ClientName, Flags, GoalArea, GoalAreaDescription, Model, Msg(..), ObjectiveCardData, UniqueID, goalAreaText, makeObjectiveCardData, objectiveText, selectedObjectiveData)
+import Data.Types exposing (ClientName, ClientPronouns(..), Flags, GoalArea, GoalAreaDescription, Model, Msg(..), ObjectiveCardData, UniqueID, goalAreaText, makeObjectiveCardData, objectiveText, selectedObjectiveData)
 import Dict exposing (Dict)
 import Element as El exposing (Element)
 import Element.Background as Background
@@ -125,16 +125,6 @@ copyButton objectiveCardData =
         |> El.html
 
 
-clientNameInput : ClientName -> Element Msg
-clientNameInput currentName =
-    Input.text [ El.width <| El.maximum 500 <| El.fill ]
-        { onChange = ClientNameUpdated
-        , text = currentName
-        , placeholder = Nothing
-        , label = Input.labelAbove [] <| El.text "Enter client name to populate objective descriptions:"
-        }
-
-
 searchResultsView : Bool -> List ObjectiveCardData -> Element Msg
 searchResultsView isSearchInputEntered objectiveCardData =
     El.column
@@ -173,12 +163,41 @@ goalAreaCheckbox id checked labelText =
 
 clientVariablesView : Model -> Element Msg
 clientVariablesView model =
-    El.row
-        [ El.width El.fill
-        , El.height El.fill
-        , El.paddingXY 0 30
+    El.column []
+        [ El.row
+            []
+            [ clientPronounsInput model.clientPronouns ]
+        , El.row
+            [ El.width El.fill
+            , El.height El.fill
+            , El.paddingXY 0 30
+            ]
+            [ clientNameInput model.clientName ]
         ]
-        [ clientNameInput model.clientName ]
+
+
+clientNameInput : ClientName -> Element Msg
+clientNameInput currentName =
+    Input.text [ El.width <| El.maximum 600 <| El.fill ]
+        { onChange = ClientNameUpdated
+        , text = currentName
+        , placeholder = Nothing
+        , label = Input.labelAbove [] <| El.text "Enter client name to populate objective descriptions:"
+        }
+
+
+clientPronounsInput : ClientPronouns -> Element Msg
+clientPronounsInput currentPronouns =
+    Input.radio []
+        { onChange = ClientPronounsUpdated
+        , selected = Just currentPronouns
+        , label = Input.labelAbove [] <| El.text "Client pronouns:"
+        , options =
+            [ Input.option They (El.text "They")
+            , Input.option He (El.text "He")
+            , Input.option She (El.text "She")
+            ]
+        }
 
 
 selectedObjectivesHeading : List UniqueID -> String
