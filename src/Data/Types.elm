@@ -41,8 +41,7 @@ type alias ClientName =
 
 
 type ClientPronouns
-    = They
-    | He
+    = He
     | She
 
 
@@ -121,29 +120,88 @@ makeObjectiveCardData model =
     model.matchingObjectives
         |> List.map (\id -> ( id, Dict.get id model.objectives ))
         |> List.filterMap filterSecond
-        |> List.map (foundObjectiveData model.clientName model.goalAreas model.selectedObjectives)
+        |> List.map (foundObjectiveData model.clientName model.clientPronouns model.goalAreas model.selectedObjectives)
 
 
-foundObjectiveData : String -> Dict UniqueID GoalArea -> List UniqueID -> ( UniqueID, Objective ) -> ObjectiveCardData
-foundObjectiveData clientName goalAreas selectedObjectiveIds ( id, obj ) =
+foundObjectiveData : ClientName -> ClientPronouns -> Dict UniqueID GoalArea -> List UniqueID -> ( UniqueID, Objective ) -> ObjectiveCardData
+foundObjectiveData clientName clientPronouns goalAreas selectedObjectiveIds ( id, obj ) =
     { id = id
-    , objective = interpolateClientAttributes clientName obj
+    , objective = interpolateClientAttributes clientName clientPronouns obj
     , selected = List.member id selectedObjectiveIds
     , goalAreaDescriptions = objectiveGoalAreas (objectiveGoalAreaIds <| obj) goalAreas
     }
 
 
-interpolateClientAttributes : String -> Objective -> Objective
-interpolateClientAttributes clientName obj =
+interpolateClientAttributes : ClientName -> ClientPronouns -> Objective -> Objective
+interpolateClientAttributes clientName clientPronouns obj =
     case obj of
         StoredObjective id description goalAreaIds tagIds ->
-            StoredObjective id (String.replace "{client_name}" clientName description) goalAreaIds tagIds
+            let
+                interpolatedString =
+                    String.replace "{client_name}" clientName description
+                        |> String.replace "{subject}" (subjectPronoun clientPronouns)
+                        |> String.replace "{object}" (objectPronoun clientPronouns)
+                        |> String.replace "{possessive}" (possessivePronoun clientPronouns)
+                        |> String.replace "{possessive_adjective}" (possessiveAdjective clientPronouns)
+                        |> String.replace "{reflexive}" (reflexivePronoun clientPronouns)
+            in
+            StoredObjective id interpolatedString goalAreaIds tagIds
 
 
-selectedObjectiveData : String -> Dict UniqueID GoalArea -> ( UniqueID, Objective ) -> ObjectiveCardData
-selectedObjectiveData clientName goalAreas ( id, obj ) =
+subjectPronoun : ClientPronouns -> String
+subjectPronoun clientPronouns =
+    case clientPronouns of
+        He ->
+            "he"
+
+        She ->
+            "she"
+
+
+objectPronoun : ClientPronouns -> String
+objectPronoun clientPronouns =
+    case clientPronouns of
+        He ->
+            "him"
+
+        She ->
+            "her"
+
+
+possessivePronoun : ClientPronouns -> String
+possessivePronoun clientPronouns =
+    case clientPronouns of
+        He ->
+            "his"
+
+        She ->
+            "her"
+
+
+possessiveAdjective : ClientPronouns -> String
+possessiveAdjective clientPronouns =
+    case clientPronouns of
+        He ->
+            "his"
+
+        She ->
+            "hers"
+
+
+reflexivePronoun : ClientPronouns -> String
+reflexivePronoun clientPronouns =
+    case clientPronouns of
+        He ->
+            "himself"
+
+        She ->
+            "herself"
+
+
+selectedObjectiveData : ClientName -> ClientPronouns -> Dict UniqueID GoalArea -> ( UniqueID, Objective ) -> ObjectiveCardData
+selectedObjectiveData clientName clientPronouns goalAreas ( id, obj ) =
     { id = id
-    , objective = interpolateClientAttributes clientName obj
+    , objective = interpolateClientAttributes clientName clientPronouns obj
     , selected = True
     , goalAreaDescriptions = objectiveGoalAreas (objectiveGoalAreaIds <| obj) goalAreas
     }

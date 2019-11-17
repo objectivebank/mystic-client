@@ -30,7 +30,7 @@ init flags _ _ =
       , goalAreas = Dict.empty
       , selectedGoalAreas = []
       , clientName = "Client"
-      , clientPronouns = They
+      , clientPronouns = He
       , graphqlURL = flags.graphqlURL
       , searchInputEntered = False
       }

@@ -91,7 +91,7 @@ selectedWrapper model =
 
         objectiveCardData =
             selectedObjectives
-                |> List.map (selectedObjectiveData model.clientName model.goalAreas)
+                |> List.map (selectedObjectiveData model.clientName model.clientPronouns model.goalAreas)
     in
     El.column
         [ El.alignRight
@@ -195,8 +195,7 @@ clientPronounsInput currentPronouns =
         , selected = Just currentPronouns
         , label = Input.labelAbove [] <| El.text "Client pronouns:"
         , options =
-            [ Input.option They (El.text "They")
-            , Input.option He (El.text "He")
+            [ Input.option He (El.text "He")
             , Input.option She (El.text "She")
             ]
         }
