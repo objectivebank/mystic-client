@@ -18,13 +18,13 @@ view : Model -> Document Msg
 view model =
     { title = "Objective Bank"
     , body =
-        [ El.layout [] <| applicationView model <| makeObjectiveCardData model
+        [ El.layout [] <| applicationView model
         ]
     }
 
 
-applicationView : Model -> List ObjectiveCardData -> Element Msg
-applicationView model objectiveCardData =
+applicationView : Model -> Element Msg
+applicationView model =
     El.column
         [ El.width El.fill
         , El.height El.fill
@@ -32,7 +32,7 @@ applicationView model objectiveCardData =
         ]
         [ searchBarView model.objectiveSearchText
         , middleView model
-        , searchResultsView model.searchInputEntered objectiveCardData
+        , searchResultsView model.searchInputEntered <| makeObjectiveCardData model
         ]
 
 
