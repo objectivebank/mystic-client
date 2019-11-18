@@ -3,7 +3,7 @@ module Main exposing (main)
 import API exposing (goalAreasQuery, objectivesSearch)
 import Browser exposing (Document)
 import Browser.Navigation exposing (Key)
-import Data.Types exposing (Flags, Model, Msg(..), UniqueID, goalAreaId, objectiveId)
+import Data.Types exposing (ClientPronouns(..), Flags, Model, Msg(..), UniqueID, goalAreaId, objectiveId)
 import Dict exposing (Dict)
 import Ui.View exposing (..)
 import Url exposing (Url)
@@ -30,6 +30,7 @@ init flags _ _ =
       , goalAreas = Dict.empty
       , selectedGoalAreas = []
       , clientName = "Client"
+      , clientPronouns = He
       , graphqlURL = flags.graphqlURL
       , searchInputEntered = False
       }
@@ -117,6 +118,9 @@ update msg model =
 
         ClientNameUpdated newName ->
             ( { model | clientName = newName }, Cmd.none )
+
+        ClientPronounsUpdated newPronouns ->
+            ( { model | clientPronouns = newPronouns }, Cmd.none )
 
         GoalAreasResponse result ->
             ( { model | goalAreas = setGoalAreas result model.goalAreas }, Cmd.none )
