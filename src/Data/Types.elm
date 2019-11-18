@@ -175,7 +175,7 @@ possessivePronoun clientPronouns =
             "his"
 
         She ->
-            "her"
+            "hers"
 
 
 possessiveAdjective : ClientPronouns -> String
@@ -185,7 +185,7 @@ possessiveAdjective clientPronouns =
             "his"
 
         She ->
-            "hers"
+            "her"
 
 
 reflexivePronoun : ClientPronouns -> String
