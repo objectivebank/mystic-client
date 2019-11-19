@@ -19,20 +19,20 @@ view model =
     { title = "Objective Bank"
     , body =
         -- [ El.layout [] <| applicationView model
-        [ El.layout [] newView
+        [ El.layout [] <| newView model
         ]
     }
 
 
-newView : Element Msg
-newView =
+newView : Model -> Element Msg
+newView model =
     El.column
         [ El.width El.fill
         , El.height El.fill
         ]
         [ El.row
             [ El.width El.fill
-            , El.height <| El.maximum 800 <| El.minimum 600 <| El.fill
+            , El.height <| El.maximum 800 <| El.minimum 650 <| El.fill
             ]
             [ El.column
                 [ El.width <| El.fillPortion 3
@@ -46,25 +46,32 @@ newView =
                     , El.height <| El.px 30
                     , Background.color <| El.rgb255 216 191 216
                     ]
-                    []
+                    [ objectiveSearchLabelView
+                    ]
                 , El.row
                     [ El.width El.fill
-                    , El.height <| El.fillPortion 4
+                    , El.height <| El.fillPortion 2
                     , Background.color <| El.rgb255 216 191 216
                     ]
-                    []
+                    [ El.el
+                        [ El.width El.fill
+                        , El.alignTop
+                        ]
+                      <|
+                        objectiveSearchBarView model.objectiveSearchText
+                    ]
                 , El.row
                     [ El.width El.fill
                     , El.height <| El.fillPortion 14
                     , Background.color <| El.rgb255 216 191 216
                     ]
-                    []
+                    [ goalAreasView2 model ]
                 , El.row
                     [ El.width El.fill
                     , El.height <| El.fillPortion 6
                     , Background.color <| El.rgb255 216 191 216
                     ]
-                    []
+                    [ clientVariablesView2 model ]
                 ]
             , El.column
                 [ El.width <| El.fillPortion 5
@@ -110,11 +117,53 @@ newView =
 
 
 panelPadding =
-    6
+    8
 
 
 panelSpacing =
     2
+
+
+objectiveSearchLabelView =
+    El.text "Objective Search"
+
+
+objectiveSearchBarView currentSearchText =
+    Input.text [ El.width El.fill ]
+        { onChange = \text -> SearchTextEntered text
+        , text = currentSearchText
+        , placeholder = Just (Input.placeholder [] <| El.text "Search...")
+        , label = Input.labelHidden "Enter objective search terms"
+        }
+
+
+goalAreasView2 : Model -> Element Msg
+goalAreasView2 model =
+    El.column
+        []
+        [ El.text "Goal Areas"
+        , goalAreaCheckboxes model.goalAreas model.selectedGoalAreas
+        ]
+
+
+clientVariablesView2 : Model -> Element Msg
+clientVariablesView2 model =
+    El.column
+        [ El.width El.fill
+        , El.height El.fill
+        , El.spaceEvenly
+        ]
+        [ El.row
+            [ El.width El.fill
+            , El.height <| El.fillPortion 2
+            ]
+            [ clientNameInput model.clientName ]
+        , El.row
+            [ El.width El.fill
+            , El.height <| El.fillPortion 3
+            ]
+            [ clientPronounsInput model.clientPronouns ]
+        ]
 
 
 selectedObjectivesView =
@@ -275,11 +324,10 @@ goalAreaCheckbox id checked labelText =
 
 clientVariablesView : Model -> Element Msg
 clientVariablesView model =
-    El.column [ El.height El.fill ]
+    El.column [ El.height El.fill, El.spacing 30 ]
         [ El.row
             [ El.width El.fill
             , El.height <| El.fillPortion 2
-            , El.paddingXY 0 30
             ]
             [ clientNameInput model.clientName ]
         , El.row
@@ -292,7 +340,7 @@ clientVariablesView model =
 
 clientNameInput : ClientName -> Element Msg
 clientNameInput currentName =
-    Input.text [ El.width <| El.maximum 600 <| El.fill ]
+    Input.text [ El.width El.fill ]
         { onChange = ClientNameUpdated
         , text = currentName
         , placeholder = Nothing
