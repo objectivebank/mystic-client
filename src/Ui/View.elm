@@ -39,6 +39,7 @@ newView model =
     El.column
         [ El.width El.fill
         , El.height El.fill
+        , El.padding 6
         ]
         [ El.row
             [ El.width El.fill
