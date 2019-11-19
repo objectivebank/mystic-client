@@ -42,26 +42,23 @@ newView model =
         ]
         [ El.row
             [ El.width El.fill
-            , El.height <| El.maximum 800 <| El.minimum 650 <| El.fill
+            , El.height <| El.px 700
             ]
             [ El.column
                 [ El.width <| El.fillPortion 3
                 , El.height El.fill
                 , El.padding panelPadding
                 , El.spacing panelSpacing
-                , Background.color <| El.rgb255 186 85 211
                 ]
                 [ El.row
                     [ El.width El.fill
                     , El.height <| El.px 30
-                    , Background.color <| El.rgb255 216 191 216
                     ]
                     [ objectiveSearchLabelView
                     ]
                 , El.row
                     [ El.width El.fill
                     , El.height <| El.fillPortion 2
-                    , Background.color <| El.rgb255 216 191 216
                     ]
                     [ El.el
                         [ El.width El.fill
@@ -73,13 +70,11 @@ newView model =
                 , El.row
                     [ El.width El.fill
                     , El.height <| El.fillPortion 14
-                    , Background.color <| El.rgb255 216 191 216
                     ]
                     [ goalAreasView2 model ]
                 , El.row
                     [ El.width El.fill
                     , El.height <| El.fillPortion 6
-                    , Background.color <| El.rgb255 216 191 216
                     ]
                     [ clientVariablesView2 model ]
                 ]
@@ -88,19 +83,16 @@ newView model =
                 , El.height El.fill
                 , El.padding panelPadding
                 , El.spacing panelSpacing
-                , Background.color <| El.rgb255 230 230 250
                 ]
                 [ El.row
                     [ El.width El.fill
                     , El.height <| El.px 30
                     , El.spaceEvenly
-                    , Background.color <| El.rgb255 216 191 216
                     ]
                     (selectedObjectivesCopyView model selectedObjectivesCardData)
                 , El.row
                     [ El.width El.fill
                     , El.height El.fill
-                    , Background.color <| El.rgb255 216 191 216
                     , El.scrollbarY
                     ]
                     [ El.column
@@ -115,7 +107,6 @@ newView model =
         , El.row
             [ El.width El.fill
             , El.height El.fill
-            , Background.color <| El.rgb255 128 0 128
             ]
             [ El.column
                 [ El.width El.fill
@@ -363,7 +354,8 @@ copyButton objectiveCardData =
         , Attributes.title "Copy objectives"
         , Attributes.attribute "data-clipboard-text" copyableObjectives
         , Attributes.style "background-color" "unset"
-        , Attributes.style "border-width" "0"
+        , Attributes.style "padding-top" "3px"
+        , Attributes.style "border-color" "rgb(204, 229, 255)"
         ]
         [ clippy "copy-button-image" ]
         |> El.html
