@@ -83,9 +83,10 @@ newView model =
                 [ El.row
                     [ El.width El.fill
                     , El.height <| El.px 30
+                    , El.spaceEvenly
                     , Background.color <| El.rgb255 216 191 216
                     ]
-                    []
+                    (selectedObjectivesCopyView model)
                 , El.row
                     [ El.width El.fill
                     , El.height El.fill
@@ -164,6 +165,22 @@ clientVariablesView2 model =
             ]
             [ clientPronounsInput model.clientPronouns ]
         ]
+
+
+selectedObjectivesCopyView model =
+    let
+        selectedObjectives =
+            model.selectedObjectives
+                |> List.map (\id -> ( id, Dict.get id model.objectives ))
+                |> List.filterMap filterSecond
+
+        objectiveCardData =
+            selectedObjectives
+                |> List.map (selectedObjectiveData model.clientName model.clientPronouns model.goalAreas)
+    in
+    [ El.text <| selectedObjectivesHeading model.selectedObjectives
+    , copyButton objectiveCardData
+    ]
 
 
 selectedObjectivesView =
