@@ -18,9 +18,90 @@ view : Model -> Document Msg
 view model =
     { title = "Objective Bank"
     , body =
-        [ El.layout [] <| applicationView model
+        -- [ El.layout [] <| applicationView model
+        [ El.layout [] newView
         ]
     }
+
+
+newView : Element Msg
+newView =
+    El.column
+        [ El.width El.fill
+        , El.height El.fill
+        ]
+        [ El.row
+            [ El.width El.fill
+            , El.height <| El.maximum 800 <| El.minimum 600 <| El.fill
+            ]
+            [ El.column
+                [ El.width <| El.fillPortion 3
+                , El.height El.fill
+                , El.padding panelPadding
+                , El.spacing panelSpacing
+                , Background.color <| El.rgb255 186 85 211
+                ]
+                [ El.row
+                    [ El.width El.fill
+                    , El.height <| El.px 30
+                    , Background.color <| El.rgb255 216 191 216
+                    ]
+                    []
+                , El.row
+                    [ El.width El.fill
+                    , El.height <| El.fillPortion 4
+                    , Background.color <| El.rgb255 216 191 216
+                    ]
+                    []
+                , El.row
+                    [ El.width El.fill
+                    , El.height <| El.fillPortion 14
+                    , Background.color <| El.rgb255 216 191 216
+                    ]
+                    []
+                , El.row
+                    [ El.width El.fill
+                    , El.height <| El.fillPortion 6
+                    , Background.color <| El.rgb255 216 191 216
+                    ]
+                    []
+                ]
+            , El.column
+                [ El.width <| El.fillPortion 5
+                , El.height El.fill
+                , El.padding panelPadding
+                , El.spacing panelSpacing
+                , Background.color <| El.rgb255 230 230 250
+                ]
+                [ El.row
+                    [ El.width El.fill
+                    , El.height <| El.px 30
+                    , Background.color <| El.rgb255 216 191 216
+                    ]
+                    []
+                , El.row
+                    [ El.width El.fill
+                    , El.height <| El.fill
+                    , Background.color <| El.rgb255 216 191 216
+                    ]
+                    []
+                ]
+            ]
+        , El.row
+            [ El.width El.fill
+            , El.height El.fill
+            , Background.color <| El.rgb255 128 0 128
+            ]
+            []
+        ]
+
+
+panelPadding =
+    6
+
+
+panelSpacing =
+    2
 
 
 applicationView : Model -> Element Msg
