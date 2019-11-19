@@ -122,7 +122,9 @@ newView model =
                 , El.padding panelPadding
                 , El.spacing panelSpacing
                 ]
-                [ foundObjectivesView model ]
+                [ foundObjectivesHeading model.searchInputEntered
+                , searchResultsView2 <| makeObjectiveCardData model
+                ]
             ]
         ]
 
@@ -198,6 +200,50 @@ selectedObjectivesView objs =
         )
 
 
+foundObjectivesHeading : Bool -> Element Msg
+foundObjectivesHeading isSearchInputEntered =
+    if isSearchInputEntered then
+        El.text "Results"
+
+    else
+        El.none
+
+
+searchResultsView2 : List ObjectiveCardData -> Element Msg
+searchResultsView2 foundObjectives =
+    El.row
+        [ El.spaceEvenly
+        , El.width El.fill
+        , El.height El.fill
+        ]
+        [ El.column [ El.width El.fill, El.spacing 10 ]
+            [ objectivesView2 foundObjectives ]
+        ]
+
+
+objectivesView2 : List ObjectiveCardData -> Element Msg
+objectivesView2 objs =
+    objectivesColumn2
+        white
+        (List.map
+            (\objectiveCardData ->
+                let
+                    objectiveBackgroundColor =
+                        if objectiveCardData.selected then
+                            lightBlue
+
+                        else
+                            lightGray
+                in
+                foundObjective objectiveCardData.id
+                    objectiveBackgroundColor
+                    (objectiveText objectiveCardData.objective)
+                    objectiveCardData.goalAreaDescriptions
+            )
+            objs
+        )
+
+
 objectivesColumn2 : El.Color -> List (Element msg) -> Element msg
 objectivesColumn2 backgroundColor elements =
     El.column
@@ -205,12 +251,9 @@ objectivesColumn2 backgroundColor elements =
         , El.alignTop
         , El.width (El.fillPortion 8)
         , El.height El.fill
+        , El.spacing 8
         ]
         elements
-
-
-foundObjectivesView model =
-    searchResultsView model.searchInputEntered <| makeObjectiveCardData model
 
 
 card : Element Msg
@@ -522,8 +565,9 @@ objectiveCard : Msg -> String -> String -> List GoalAreaDescription -> El.Color 
 objectiveCard buttonMsg buttonText objText goalAreas backgroundColor =
     El.el
         [ El.padding 5
-        , El.height <| El.px 90
+        , El.height <| El.minimum 90 <| El.maximum 110 <| El.fill
         , El.width El.fill
+        , El.clipY
         , Background.color
             backgroundColor
         ]
