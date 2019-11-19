@@ -26,6 +26,16 @@ view model =
 
 newView : Model -> Element Msg
 newView model =
+    let
+        selectedObjectives =
+            model.selectedObjectives
+                |> List.map (\id -> ( id, Dict.get id model.objectives ))
+                |> List.filterMap filterSecond
+
+        selectedObjectivesCardData =
+            selectedObjectives
+                |> List.map (selectedObjectiveData model.clientName model.clientPronouns model.goalAreas)
+    in
     El.column
         [ El.width El.fill
         , El.height El.fill
@@ -86,7 +96,7 @@ newView model =
                     , El.spaceEvenly
                     , Background.color <| El.rgb255 216 191 216
                     ]
-                    (selectedObjectivesCopyView model)
+                    (selectedObjectivesCopyView model selectedObjectivesCardData)
                 , El.row
                     [ El.width El.fill
                     , El.height El.fill
@@ -97,7 +107,7 @@ newView model =
                         , El.height El.fill
                         , El.spacing panelSpacing
                         ]
-                        selectedObjectivesView
+                        [ selectedObjectivesView selectedObjectivesCardData ]
                     ]
                 ]
             ]
@@ -112,7 +122,7 @@ newView model =
                 , El.padding panelPadding
                 , El.spacing panelSpacing
                 ]
-                foundObjectivesView
+                [ foundObjectivesView model ]
             ]
         ]
 
@@ -167,28 +177,40 @@ clientVariablesView2 model =
         ]
 
 
-selectedObjectivesCopyView model =
-    let
-        selectedObjectives =
-            model.selectedObjectives
-                |> List.map (\id -> ( id, Dict.get id model.objectives ))
-                |> List.filterMap filterSecond
-
-        objectiveCardData =
-            selectedObjectives
-                |> List.map (selectedObjectiveData model.clientName model.clientPronouns model.goalAreas)
-    in
+selectedObjectivesCopyView : Model -> List ObjectiveCardData -> List (Element Msg)
+selectedObjectivesCopyView model objectiveCardData =
     [ El.text <| selectedObjectivesHeading model.selectedObjectives
     , copyButton objectiveCardData
     ]
 
 
-selectedObjectivesView =
-    [ card, card ]
+selectedObjectivesView : List ObjectiveCardData -> Element Msg
+selectedObjectivesView objs =
+    objectivesColumn2
+        white
+        (List.map
+            (\objectiveCardData ->
+                selectedObjective objectiveCardData.id
+                    (objectiveText objectiveCardData.objective)
+                    objectiveCardData.goalAreaDescriptions
+            )
+            objs
+        )
 
 
-foundObjectivesView =
-    [ card, card, card ]
+objectivesColumn2 : El.Color -> List (Element msg) -> Element msg
+objectivesColumn2 backgroundColor elements =
+    El.column
+        [ Background.color backgroundColor
+        , El.alignTop
+        , El.width (El.fillPortion 8)
+        , El.height El.fill
+        ]
+        elements
+
+
+foundObjectivesView model =
+    searchResultsView model.searchInputEntered <| makeObjectiveCardData model
 
 
 card : Element Msg
