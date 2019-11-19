@@ -81,10 +81,16 @@ newView =
                     []
                 , El.row
                     [ El.width El.fill
-                    , El.height <| El.fill
+                    , El.height El.fill
                     , Background.color <| El.rgb255 216 191 216
                     ]
-                    []
+                    [ El.column
+                        [ El.width El.fill
+                        , El.height El.fill
+                        , El.spacing panelSpacing
+                        ]
+                        selectedObjectivesView
+                    ]
                 ]
             ]
         , El.row
@@ -92,7 +98,14 @@ newView =
             , El.height El.fill
             , Background.color <| El.rgb255 128 0 128
             ]
-            []
+            [ El.column
+                [ El.width El.fill
+                , El.height El.fill
+                , El.padding panelPadding
+                , El.spacing panelSpacing
+                ]
+                foundObjectivesView
+            ]
         ]
 
 
@@ -102,6 +115,24 @@ panelPadding =
 
 panelSpacing =
     2
+
+
+selectedObjectivesView =
+    [ card, card ]
+
+
+foundObjectivesView =
+    [ card, card, card ]
+
+
+card : Element Msg
+card =
+    El.row
+        [ El.width El.fill
+        , El.height <| El.minimum 100 <| El.maximum 120 <| El.fill
+        , Background.color <| El.rgb255 238 130 238
+        ]
+        []
 
 
 applicationView : Model -> Element Msg
