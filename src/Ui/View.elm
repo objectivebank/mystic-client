@@ -101,6 +101,7 @@ newView model =
                     [ El.width El.fill
                     , El.height El.fill
                     , Background.color <| El.rgb255 216 191 216
+                    , El.scrollbarY
                     ]
                     [ El.column
                         [ El.width El.fill
@@ -249,7 +250,7 @@ objectivesColumn2 backgroundColor elements =
     El.column
         [ Background.color backgroundColor
         , El.alignTop
-        , El.width (El.fillPortion 8)
+        , El.width El.fill
         , El.height El.fill
         , El.spacing 8
         ]
