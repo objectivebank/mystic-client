@@ -279,16 +279,6 @@ objectivesColumn backgroundColor elements =
         elements
 
 
-card : Element Msg
-card =
-    El.row
-        [ El.width El.fill
-        , El.height <| El.minimum 100 <| El.maximum 120 <| El.fill
-        , Background.color <| El.rgb255 238 130 238
-        ]
-        []
-
-
 copyButton : List ObjectiveCardData -> Element Msg
 copyButton objectiveCardData =
     let
