@@ -209,6 +209,15 @@ selectedObjectivesCopyView model objectiveCardData =
     ]
 
 
+selectedObjectivesHeading : List UniqueID -> String
+selectedObjectivesHeading selectedObjectives =
+    if List.length selectedObjectives == 0 then
+        "Selected objectives"
+
+    else
+        "Selected objectives (" ++ String.fromInt (List.length selectedObjectives) ++ ")"
+
+
 selectedObjectivesView : List ObjectiveCardData -> Element Msg
 selectedObjectivesView objs =
     objectivesColumn
@@ -336,15 +345,6 @@ clientPronounsInput currentPronouns =
             , Input.option She (El.text "She")
             ]
         }
-
-
-selectedObjectivesHeading : List UniqueID -> String
-selectedObjectivesHeading selectedObjectives =
-    if List.length selectedObjectives == 0 then
-        "Selected objectives"
-
-    else
-        "Selected objectives (" ++ String.fromInt (List.length selectedObjectives) ++ ")"
 
 
 foundObjective id backgroundColor text goalAreas =
