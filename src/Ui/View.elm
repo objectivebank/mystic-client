@@ -7,7 +7,6 @@ import Data.Types exposing (ClientName, ClientPronouns(..), Flags, GoalArea, Goa
 import Dict exposing (Dict)
 import Element as El exposing (Element)
 import Element.Background as Background
-import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
 import Html exposing (Html)
@@ -17,15 +16,52 @@ import Html.Attributes as Attributes
 view : Model -> Document Msg
 view model =
     { title = "Objective Bank"
-    , body =
-        -- [ El.layout [] <| applicationView model
-        [ El.layout [] <| newView model
-        ]
+    , body = [ El.layout [] <| applicationView model ]
     }
 
 
-newView : Model -> Element Msg
-newView model =
+lightGray =
+    El.rgb 0.9 0.9 0.9
+
+
+white =
+    El.rgb 1 1 1
+
+
+lightBlue =
+    El.rgb255 204 229 255
+
+
+panelPadding =
+    8
+
+
+panelSpacing =
+    2
+
+
+controlPanelHeight =
+    700
+
+
+outerPadding =
+    6
+
+
+panelLabelHeight =
+    30
+
+
+panelLabelPadding =
+    { top = 0
+    , right = 0
+    , left = 0
+    , bottom = 10
+    }
+
+
+applicationView : Model -> Element Msg
+applicationView model =
     let
         selectedObjectives =
             model.selectedObjectives
@@ -39,11 +75,11 @@ newView model =
     El.column
         [ El.width El.fill
         , El.height El.fill
-        , El.padding 6
+        , El.padding outerPadding
         ]
         [ El.row
             [ El.width El.fill
-            , El.height <| El.px 700
+            , El.height <| El.px controlPanelHeight
             ]
             [ El.column
                 [ El.width <| El.fillPortion 3
@@ -53,7 +89,8 @@ newView model =
                 ]
                 [ El.row
                     [ El.width El.fill
-                    , El.height <| El.px 30
+                    , El.height <| El.px panelLabelHeight
+                    , El.paddingEach panelLabelPadding
                     ]
                     [ objectiveSearchLabelView
                     ]
@@ -72,12 +109,12 @@ newView model =
                     [ El.width El.fill
                     , El.height <| El.fillPortion 14
                     ]
-                    [ goalAreasView2 model ]
+                    [ goalAreasView model ]
                 , El.row
                     [ El.width El.fill
                     , El.height <| El.fillPortion 6
                     ]
-                    [ clientVariablesView2 model ]
+                    [ clientVariablesView model ]
                 ]
             , El.column
                 [ El.width <| El.fillPortion 5
@@ -88,6 +125,7 @@ newView model =
                 [ El.row
                     [ El.width El.fill
                     , El.height <| El.px 30
+                    , El.paddingEach panelLabelPadding
                     , El.spaceEvenly
                     ]
                     (selectedObjectivesCopyView model selectedObjectivesCardData)
@@ -116,18 +154,10 @@ newView model =
                 , El.spacing panelSpacing
                 ]
                 [ foundObjectivesHeading model.searchInputEntered
-                , searchResultsView2 <| makeObjectiveCardData model
+                , searchResultsView <| makeObjectiveCardData model
                 ]
             ]
         ]
-
-
-panelPadding =
-    8
-
-
-panelSpacing =
-    2
 
 
 objectiveSearchLabelView =
@@ -143,8 +173,8 @@ objectiveSearchBarView currentSearchText =
         }
 
 
-goalAreasView2 : Model -> Element Msg
-goalAreasView2 model =
+goalAreasView : Model -> Element Msg
+goalAreasView model =
     El.column
         []
         [ El.text "Goal Areas"
@@ -152,8 +182,8 @@ goalAreasView2 model =
         ]
 
 
-clientVariablesView2 : Model -> Element Msg
-clientVariablesView2 model =
+clientVariablesView : Model -> Element Msg
+clientVariablesView model =
     El.column
         [ El.width El.fill
         , El.height El.fill
@@ -181,7 +211,7 @@ selectedObjectivesCopyView model objectiveCardData =
 
 selectedObjectivesView : List ObjectiveCardData -> Element Msg
 selectedObjectivesView objs =
-    objectivesColumn2
+    objectivesColumn
         white
         (List.map
             (\objectiveCardData ->
@@ -202,21 +232,21 @@ foundObjectivesHeading isSearchInputEntered =
         El.none
 
 
-searchResultsView2 : List ObjectiveCardData -> Element Msg
-searchResultsView2 foundObjectives =
+searchResultsView : List ObjectiveCardData -> Element Msg
+searchResultsView foundObjectives =
     El.row
         [ El.spaceEvenly
         , El.width El.fill
         , El.height El.fill
         ]
         [ El.column [ El.width El.fill, El.spacing 10 ]
-            [ objectivesView2 foundObjectives ]
+            [ objectivesView foundObjectives ]
         ]
 
 
-objectivesView2 : List ObjectiveCardData -> Element Msg
-objectivesView2 objs =
-    objectivesColumn2
+objectivesView : List ObjectiveCardData -> Element Msg
+objectivesView objs =
+    objectivesColumn
         white
         (List.map
             (\objectiveCardData ->
@@ -237,8 +267,8 @@ objectivesView2 objs =
         )
 
 
-objectivesColumn2 : El.Color -> List (Element msg) -> Element msg
-objectivesColumn2 backgroundColor elements =
+objectivesColumn : El.Color -> List (Element msg) -> Element msg
+objectivesColumn backgroundColor elements =
     El.column
         [ Background.color backgroundColor
         , El.alignTop
@@ -259,91 +289,6 @@ card =
         []
 
 
-applicationView : Model -> Element Msg
-applicationView model =
-    El.column
-        [ El.width El.fill
-        , El.height El.fill
-        , El.padding 10
-        ]
-        [ searchBarView model.objectiveSearchText
-        , middleView model
-        , searchResultsView model.searchInputEntered <| makeObjectiveCardData model
-        ]
-
-
-searchBarView : String -> Element Msg
-searchBarView currentSearchText =
-    El.row
-        [ El.width El.fill
-        , El.paddingEach { top = 10, right = 10, bottom = 10, left = 10 }
-        ]
-        [ El.column [ El.width El.fill, El.spacing 8 ]
-            [ El.text "Objective Search"
-            , Input.text [ El.width <| El.maximum 500 <| El.fill ]
-                { onChange = \text -> SearchTextEntered text
-                , text = currentSearchText
-                , placeholder = Just (Input.placeholder [] <| El.text "Search...")
-                , label = Input.labelHidden "Enter objective search terms"
-                }
-            ]
-        ]
-
-
-middleView : Model -> Element Msg
-middleView model =
-    El.row
-        [ El.width El.fill
-        , El.height <| El.px 600
-        , El.paddingEach { top = 0, right = 10, bottom = 0, left = 10 }
-        ]
-        [ goalAreasView model
-        , centerGap
-        , selectedWrapper model
-        ]
-
-
-goalAreasView : Model -> Element Msg
-goalAreasView model =
-    El.column
-        [ El.alignTop
-        , El.width (El.fillPortion 7)
-        , El.spaceEvenly
-        , El.paddingEach { top = 10, right = 0, bottom = 10, left = 0 }
-        ]
-        [ El.text "Goal Areas"
-        , goalAreaCheckboxes model.goalAreas model.selectedGoalAreas
-        , clientVariablesView model
-        ]
-
-
-selectedWrapper : Model -> Element Msg
-selectedWrapper model =
-    let
-        selectedObjectives =
-            model.selectedObjectives
-                |> List.map (\id -> ( id, Dict.get id model.objectives ))
-                |> List.filterMap filterSecond
-
-        objectiveCardData =
-            selectedObjectives
-                |> List.map (selectedObjectiveData model.clientName model.clientPronouns model.goalAreas)
-    in
-    El.column
-        [ El.alignRight
-        , El.width (El.fillPortion 10)
-        , El.height El.fill
-        , El.scrollbarY
-        , El.paddingEach { top = 10, right = 0, bottom = 0, left = 10 }
-        ]
-        [ El.row [ El.height <| El.maximum 30 <| El.fill, El.width El.fill, El.spaceEvenly ]
-            [ El.text <| selectedObjectivesHeading model.selectedObjectives
-            , copyButton objectiveCardData
-            ]
-        , selectedView objectiveCardData
-        ]
-
-
 copyButton : List ObjectiveCardData -> Element Msg
 copyButton objectiveCardData =
     let
@@ -362,24 +307,6 @@ copyButton objectiveCardData =
         |> El.html
 
 
-searchResultsView : Bool -> List ObjectiveCardData -> Element Msg
-searchResultsView isSearchInputEntered objectiveCardData =
-    El.column
-        [ El.width El.fill
-        , El.paddingEach { top = 0, right = 10, bottom = 10, left = 10 }
-        , El.spacing 24
-        ]
-        [ searchResults
-            isSearchInputEntered
-            objectiveCardData
-        ]
-
-
-centerGap : Element msg
-centerGap =
-    El.column [ El.width (El.fillPortion 1) ] []
-
-
 goalAreaCheckboxes : Dict UniqueID GoalArea -> List UniqueID -> Element Msg
 goalAreaCheckboxes goalAreas selectedGoalAreas =
     El.column [ El.paddingXY 0 10 ] <|
@@ -396,22 +323,6 @@ goalAreaCheckbox id checked labelText =
         , checked = checked
         , label = Input.labelRight [] (El.text labelText)
         }
-
-
-clientVariablesView : Model -> Element Msg
-clientVariablesView model =
-    El.column [ El.height El.fill, El.spacing 30 ]
-        [ El.row
-            [ El.width El.fill
-            , El.height <| El.fillPortion 2
-            ]
-            [ clientNameInput model.clientName ]
-        , El.row
-            [ El.width El.fill
-            , El.height <| El.fillPortion 3
-            ]
-            [ clientPronounsInput model.clientPronouns ]
-        ]
 
 
 clientNameInput : ClientName -> Element Msg
@@ -444,107 +355,6 @@ selectedObjectivesHeading selectedObjectives =
 
     else
         "Selected objectives (" ++ String.fromInt (List.length selectedObjectives) ++ ")"
-
-
-selectedView : List ObjectiveCardData -> Element Msg
-selectedView objs =
-    objectivesColumn lightBlue
-        white
-        (List.map
-            (\objectiveCardData ->
-                selectedObjective objectiveCardData.id
-                    (objectiveText objectiveCardData.objective)
-                    objectiveCardData.goalAreaDescriptions
-            )
-            objs
-        )
-
-
-searchResults : Bool -> List ObjectiveCardData -> Element Msg
-searchResults isSearchInputEntered foundObjectives =
-    El.row
-        [ El.width El.fill
-        , El.height El.fill
-        ]
-        [ objectivesRow isSearchInputEntered foundObjectives ]
-
-
-objectivesRow : Bool -> List ObjectiveCardData -> Element Msg
-objectivesRow isSearchInputEntered foundObjectives =
-    let
-        heading =
-            if isSearchInputEntered then
-                El.text "Results"
-
-            else
-                El.none
-    in
-    El.row
-        [ El.spaceEvenly
-        , El.width El.fill
-        , El.height El.fill
-        ]
-        [ El.column [ El.width El.fill, El.spacing 10 ]
-            [ heading, objectivesView foundObjectives ]
-        ]
-
-
-objectivesColumn : El.Color -> El.Color -> List (Element msg) -> Element msg
-objectivesColumn borderColor backgroundColor elements =
-    El.column
-        [ Border.color borderColor
-        , Background.color backgroundColor
-        , Border.width 1
-        , El.alignTop
-        , El.width (El.fillPortion 8)
-        , El.height El.fill
-        , El.padding 8
-        , El.spacing 8
-        ]
-        elements
-
-
-objectivesView : List ObjectiveCardData -> Element Msg
-objectivesView objs =
-    let
-        borderColor =
-            if List.length objs > 0 then
-                lightGray
-
-            else
-                white
-    in
-    objectivesColumn borderColor
-        white
-        (List.map
-            (\objectiveCardData ->
-                let
-                    objectiveBackgroundColor =
-                        if objectiveCardData.selected then
-                            lightBlue
-
-                        else
-                            lightGray
-                in
-                foundObjective objectiveCardData.id
-                    objectiveBackgroundColor
-                    (objectiveText objectiveCardData.objective)
-                    objectiveCardData.goalAreaDescriptions
-            )
-            objs
-        )
-
-
-lightGray =
-    El.rgb 0.9 0.9 0.9
-
-
-white =
-    El.rgb 1 1 1
-
-
-lightBlue =
-    El.rgb255 204 229 255
 
 
 foundObjective id backgroundColor text goalAreas =
